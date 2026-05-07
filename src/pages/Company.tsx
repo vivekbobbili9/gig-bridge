@@ -128,6 +128,8 @@ const Stat = ({ icon: Icon, label, value }: { icon: any; label: string; value: s
 );
 
 const NewTicketDialog = ({ onClose, onCreate }: { onClose: () => void; onCreate: (g: any) => void }) => {
+  const todayISO = new Date().toISOString().slice(0, 10);
+  const weekISO = new Date(Date.now() + 6 * 86400000).toISOString().slice(0, 10);
   const [form, setForm] = useState({
     companyName: "BlueCart Logistics",
     title: "",
@@ -137,22 +139,25 @@ const NewTicketDialog = ({ onClose, onCreate }: { onClose: () => void; onCreate:
     workersNeeded: 4,
     payPerWorker: 800,
     location: "",
-    startTime: "Today, 6:00 PM",
+    startDate: todayISO,
+    endDate: weekISO,
+    dailyStartTime: "6:00 PM",
     notes: "",
   });
 
   const submit = () => {
     if (!form.title || !form.location) { toast.error("Fill in task title and location"); return; }
+    if (form.endDate < form.startDate) { toast.error("End date must be after start date"); return; }
     onCreate(form);
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 p-0 sm:items-center sm:p-4" onClick={onClose}>
-      <div className="w-full max-w-2xl animate-fade-up rounded-t-2xl bg-card p-6 shadow-elevated sm:rounded-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full max-w-2xl animate-fade-up rounded-t-2xl bg-card p-6 shadow-elevated sm:rounded-2xl max-h-[92vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <div>
             <div className="font-display text-xl font-bold">Raise a manpower ticket</div>
-            <p className="text-sm text-muted-foreground">Workers in the area will be notified instantly.</p>
+            <p className="text-sm text-muted-foreground">Post for a single day or up to a week — workers pick the days they can work.</p>
           </div>
         </div>
 
@@ -171,17 +176,23 @@ const NewTicketDialog = ({ onClose, onCreate }: { onClose: () => void; onCreate:
           <Field label="Workers needed">
             <Input type="number" min={1} value={form.workersNeeded} onChange={(e) => setForm({ ...form, workersNeeded: +e.target.value })} />
           </Field>
-          <Field label="Loading hours">
-            <Input type="number" min={0} step={0.5} value={form.loadingHours} onChange={(e) => setForm({ ...form, loadingHours: +e.target.value })} />
-          </Field>
-          <Field label="Unloading hours">
-            <Input type="number" min={0} step={0.5} value={form.unloadingHours} onChange={(e) => setForm({ ...form, unloadingHours: +e.target.value })} />
-          </Field>
-          <Field label="Pay per worker (₹)">
+          <Field label="Pay per worker / day (₹)">
             <Input type="number" min={0} value={form.payPerWorker} onChange={(e) => setForm({ ...form, payPerWorker: +e.target.value })} />
           </Field>
-          <Field label="Start time">
-            <Input value={form.startTime} onChange={(e) => setForm({ ...form, startTime: e.target.value })} />
+          <Field label="Loading hours / day">
+            <Input type="number" min={0} step={0.5} value={form.loadingHours} onChange={(e) => setForm({ ...form, loadingHours: +e.target.value })} />
+          </Field>
+          <Field label="Unloading hours / day">
+            <Input type="number" min={0} step={0.5} value={form.unloadingHours} onChange={(e) => setForm({ ...form, unloadingHours: +e.target.value })} />
+          </Field>
+          <Field label="Start date">
+            <Input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} />
+          </Field>
+          <Field label="End date">
+            <Input type="date" value={form.endDate} min={form.startDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} />
+          </Field>
+          <Field label="Daily start time">
+            <Input value={form.dailyStartTime} onChange={(e) => setForm({ ...form, dailyStartTime: e.target.value })} placeholder="e.g. 6:00 PM" />
           </Field>
           <Field label="Location" full>
             <Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="e.g. Whitefield ICD, Bengaluru" />
@@ -193,7 +204,7 @@ const NewTicketDialog = ({ onClose, onCreate }: { onClose: () => void; onCreate:
 
         <div className="mt-6 flex justify-end gap-3">
           <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button onClick={submit} className="bg-accent text-accent-foreground hover:bg-accent/90">Publish ticket</Button>
+          <Button onClick={submit} className="bg-primary text-primary-foreground hover:bg-primary/90">Publish ticket</Button>
         </div>
       </div>
     </div>
