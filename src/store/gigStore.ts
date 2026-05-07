@@ -15,9 +15,9 @@ export interface Gig {
   workersAccepted: number;
   payPerWorker: number;
   location: string;
-  /** Mock map coordinates as percentages (0-100) on the stylized map canvas */
-  x: number;
-  y: number;
+  /** Real geo coordinates */
+  lat: number;
+  lng: number;
   distanceKm: number;
   startTime: string;
   notes?: string;
@@ -28,12 +28,15 @@ export interface Gig {
 interface GigStore {
   gigs: Gig[];
   workerOnline: boolean;
-  workerLocation: { x: number; y: number };
+  workerLocation: { lat: number; lng: number };
   acceptedGigIds: string[];
-  addGig: (g: Omit<Gig, "id" | "status" | "createdAt" | "workersAccepted" | "x" | "y" | "distanceKm">) => void;
+  addGig: (g: Omit<Gig, "id" | "status" | "createdAt" | "workersAccepted" | "lat" | "lng" | "distanceKm">) => void;
   acceptGig: (id: string) => void;
   toggleOnline: () => void;
 }
+
+// Centred near Bengaluru
+const CENTER = { lat: 12.9716, lng: 77.5946 };
 
 const seed: Gig[] = [
   {
@@ -47,8 +50,7 @@ const seed: Gig[] = [
     workersAccepted: 3,
     payPerWorker: 950,
     location: "Whitefield ICD, Bengaluru",
-    x: 32,
-    y: 44,
+    lat: 12.9698, lng: 77.7500,
     distanceKm: 2.4,
     startTime: "Today, 4:00 PM",
     notes: "Cartons up to 25kg. Safety shoes provided.",
@@ -66,8 +68,7 @@ const seed: Gig[] = [
     workersAccepted: 1,
     payPerWorker: 720,
     location: "Yeshwanthpur Mandi",
-    x: 58,
-    y: 30,
+    lat: 13.0280, lng: 77.5540,
     distanceKm: 5.1,
     startTime: "Tomorrow, 5:00 AM",
     notes: "Cold environment. Jackets provided.",
@@ -85,8 +86,7 @@ const seed: Gig[] = [
     workersAccepted: 0,
     payPerWorker: 1100,
     location: "HSR Layout → Indiranagar",
-    x: 70,
-    y: 62,
+    lat: 12.9120, lng: 77.6446,
     distanceKm: 3.8,
     startTime: "Today, 6:30 PM",
     status: "open",
@@ -103,8 +103,7 @@ const seed: Gig[] = [
     workersAccepted: 7,
     payPerWorker: 600,
     location: "Bommasandra Industrial Area",
-    x: 22,
-    y: 70,
+    lat: 12.8120, lng: 77.6980,
     distanceKm: 8.6,
     startTime: "Today, 9:00 PM",
     status: "open",
@@ -115,7 +114,7 @@ const seed: Gig[] = [
 export const useGigStore = create<GigStore>((set) => ({
   gigs: seed,
   workerOnline: true,
-  workerLocation: { x: 50, y: 50 },
+  workerLocation: CENTER,
   acceptedGigIds: [],
   addGig: (g) =>
     set((s) => {
@@ -125,8 +124,8 @@ export const useGigStore = create<GigStore>((set) => ({
         status: "open",
         workersAccepted: 0,
         createdAt: Date.now(),
-        x: 20 + Math.random() * 60,
-        y: 20 + Math.random() * 60,
+        lat: CENTER.lat + (Math.random() - 0.5) * 0.12,
+        lng: CENTER.lng + (Math.random() - 0.5) * 0.12,
         distanceKm: +(1 + Math.random() * 9).toFixed(1),
       };
       return { gigs: [newGig, ...s.gigs] };
