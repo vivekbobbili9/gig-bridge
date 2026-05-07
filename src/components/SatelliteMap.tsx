@@ -52,17 +52,13 @@ const SatelliteMap = ({ gigs, workerLocation, acceptedGigIds, onSelect, height =
         center={[workerLocation.lat, workerLocation.lng]}
         zoom={zoom}
         scrollWheelZoom={true}
+        zoomControl={false}
         style={{ height: "100%", width: "100%" }}
       >
         <TileLayer
-          attribution='Imagery © Esri'
-          url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+          attribution='&copy; OpenStreetMap &copy; CARTO'
+          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
           maxZoom={19}
-        />
-        {/* Labels overlay for streets */}
-        <TileLayer
-          url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
-          opacity={0.7}
         />
         <FlyTo lat={workerLocation.lat} lng={workerLocation.lng} zoom={zoom} />
 
