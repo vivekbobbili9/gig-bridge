@@ -19,10 +19,10 @@ const Landing = () => {
               <a href="#how">How it works</a>
             </Button>
             <Button asChild variant="outline" size="sm">
-              <Link to="/worker">Worker app</Link>
+              <Link to="/login/worker">Worker app</Link>
             </Button>
             <Button asChild size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90">
-              <Link to="/company">Company portal</Link>
+              <Link to="/login/company">Company portal</Link>
             </Button>
           </nav>
         </div>
@@ -45,12 +45,12 @@ const Landing = () => {
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild size="lg" className="bg-accent text-accent-foreground shadow-glow hover:bg-accent/90">
-                <Link to="/company">
+                <Link to="/login/company">
                   <Building2 className="mr-2 h-5 w-5" /> Post a gig
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="border-primary-foreground/30 bg-transparent text-primary-foreground hover:bg-primary-foreground/10">
-                <Link to="/worker">
+                <Link to="/login/worker">
                   <HardHat className="mr-2 h-5 w-5" /> I'm a worker
                 </Link>
               </Button>
@@ -130,7 +130,7 @@ const Landing = () => {
           <h2 className="mt-3 font-display text-3xl font-extrabold sm:text-4xl">Two apps. One transparent marketplace.</h2>
         </div>
         <div className="mt-12 grid gap-6 md:grid-cols-2">
-          <Link to="/company" className="group rounded-2xl border border-border bg-card p-8 transition-base hover:-translate-y-1 hover:border-accent hover:shadow-elevated">
+          <Link to="/login/company" className="group rounded-2xl border border-border bg-card p-8 transition-base hover:-translate-y-1 hover:border-accent hover:shadow-elevated">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-primary">
               <Building2 className="h-6 w-6 text-primary-foreground" />
             </div>
@@ -138,7 +138,7 @@ const Landing = () => {
             <p className="mt-2 text-muted-foreground">Raise a ticket: how many workers, what task, how long, and the pay you're offering. Watch slots fill in real-time.</p>
             <div className="mt-6 inline-flex items-center text-sm font-semibold text-accent group-hover:underline">Open portal →</div>
           </Link>
-          <Link to="/worker" className="group rounded-2xl border border-border bg-card p-8 transition-base hover:-translate-y-1 hover:border-accent hover:shadow-elevated">
+          <Link to="/login/worker" className="group rounded-2xl border border-border bg-card p-8 transition-base hover:-translate-y-1 hover:border-accent hover:shadow-elevated">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-accent">
               <HardHat className="h-6 w-6 text-accent-foreground" />
             </div>
