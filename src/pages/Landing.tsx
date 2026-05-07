@@ -33,14 +33,14 @@ const Landing = () => {
         <div className="absolute inset-0 bg-gradient-hero opacity-95" />
         <div className="absolute inset-0 grid-bg opacity-10" />
         <div className="container relative grid gap-12 py-20 lg:grid-cols-2 lg:py-28">
-          <div className="animate-fade-up text-primary-foreground">
-            <span className="inline-flex items-center gap-2 rounded-full border border-primary-foreground/20 bg-primary-foreground/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider backdrop-blur">
+          <div className="animate-fade-up text-foreground">
+            <span className="inline-flex items-center gap-2 rounded-full border border-foreground/20 bg-foreground/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider backdrop-blur">
               <Zap className="h-3 w-3" /> No contractors. No commission cuts.
             </span>
             <h1 className="mt-5 font-display text-4xl font-extrabold leading-[1.05] sm:text-5xl lg:text-6xl">
               Bulk manpower for <span className="text-accent">loading, unloading</span> & deliveries — on demand.
             </h1>
-            <p className="mt-5 max-w-xl text-lg text-primary-foreground/80">
+            <p className="mt-5 max-w-xl text-lg text-foreground/80">
               GroundForce connects companies directly with verified ground-ops workers. Post a gig in 60 seconds, fill 12 slots in minutes, and pay the worker — not a middleman.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
@@ -49,13 +49,13 @@ const Landing = () => {
                   <Building2 className="mr-2 h-5 w-5" /> Post a gig
                 </Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="border-primary-foreground/30 bg-transparent text-primary-foreground hover:bg-primary-foreground/10">
+              <Button asChild size="lg" variant="outline" className="border-foreground/30 bg-transparent text-foreground hover:bg-foreground/10">
                 <Link to="/login/worker">
                   <HardHat className="mr-2 h-5 w-5" /> I'm a worker
                 </Link>
               </Button>
             </div>
-            <div className="mt-10 grid grid-cols-3 gap-6 border-t border-primary-foreground/15 pt-6">
+            <div className="mt-10 grid grid-cols-3 gap-6 border-t border-foreground/15 pt-6">
               {[
                 { v: "0%", l: "Contractor cut" },
                 { v: "<5 min", l: "Avg fill time" },
@@ -63,7 +63,7 @@ const Landing = () => {
               ].map((s) => (
                 <div key={s.l}>
                   <div className="font-display text-2xl font-extrabold text-accent">{s.v}</div>
-                  <div className="text-xs text-primary-foreground/70">{s.l}</div>
+                  <div className="text-xs text-foreground/70">{s.l}</div>
                 </div>
               ))}
             </div>
