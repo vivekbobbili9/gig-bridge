@@ -3,7 +3,8 @@ import { Link } from "react-router-dom";
 import { useGigStore, type Gig } from "@/store/gigStore";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, Bell, CheckCircle2, Clock, IndianRupee, MapPin, Navigation, Package, Truck, User, Wallet } from "lucide-react";
+import SatelliteMap from "@/components/SatelliteMap";
+import { ArrowLeft, Bell, CheckCircle2, Clock, IndianRupee, MapPin, Package, Truck, User, Wallet } from "lucide-react";
 import { toast } from "sonner";
 
 const Worker = () => {
@@ -20,32 +21,30 @@ const Worker = () => {
   }, [acceptedGigIds, gigs]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="mx-auto min-h-screen max-w-md bg-background sm:max-w-md">
       {/* Status bar */}
-      <header className="sticky top-0 z-30 border-b border-border bg-card">
-        <div className="container flex h-16 items-center justify-between">
+      <header className="sticky top-0 z-30 border-b border-border bg-card/90 backdrop-blur-md">
+        <div className="flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-3">
             <Button asChild variant="ghost" size="icon"><Link to="/"><ArrowLeft className="h-5 w-5" /></Link></Button>
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-accent">
-              <User className="h-5 w-5 text-accent-foreground" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-primary shadow-glow">
+              <User className="h-5 w-5 text-primary-foreground" />
             </div>
             <div>
               <div className="font-display text-sm font-bold leading-tight">Hi, Ramesh</div>
               <div className="text-xs text-muted-foreground">⭐ 4.8 · 142 gigs</div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon"><Bell className="h-5 w-5" /></Button>
-          </div>
+          <Button variant="ghost" size="icon"><Bell className="h-5 w-5" /></Button>
         </div>
       </header>
 
       {/* Online toggle */}
-      <section className="container pt-5">
-        <div className={`flex items-center justify-between rounded-2xl border p-4 transition-base ${workerOnline ? "border-success/40 bg-success/5" : "border-border bg-muted/40"}`}>
+      <section className="px-4 pt-5">
+        <div className={`flex items-center justify-between rounded-2xl border p-4 transition-base ${workerOnline ? "border-primary/40 bg-primary/5" : "border-border bg-muted/40"}`}>
           <div className="flex items-center gap-3">
             <div className="relative">
-              <div className={`h-3 w-3 rounded-full ${workerOnline ? "bg-success" : "bg-muted-foreground/40"}`} />
+              <div className={`h-3 w-3 rounded-full ${workerOnline ? "bg-primary" : "bg-muted-foreground/40"}`} />
               {workerOnline && <div className="absolute inset-0 animate-pulse-ring rounded-full" />}
             </div>
             <div>
@@ -64,48 +63,18 @@ const Worker = () => {
         </div>
       </section>
 
-      {/* Map */}
-      <section className="container mt-5">
-        <div className="relative h-72 overflow-hidden rounded-2xl border border-border bg-gradient-surface shadow-sm">
-          <div className="absolute inset-0 grid-bg opacity-60" />
-          {/* fake roads */}
-          <svg className="absolute inset-0 h-full w-full" preserveAspectRatio="none" viewBox="0 0 100 100">
-            <path d="M0,55 Q35,40 60,60 T100,50" stroke="hsl(var(--border))" strokeWidth="3" fill="none" strokeLinecap="round" />
-            <path d="M40,0 Q50,40 30,60 T55,100" stroke="hsl(var(--border))" strokeWidth="3" fill="none" strokeLinecap="round" />
-          </svg>
-
-          {/* Worker pin */}
-          <div className="absolute" style={{ left: `${workerLocation.x}%`, top: `${workerLocation.y}%`, transform: "translate(-50%,-50%)" }}>
-            <div className="relative">
-              <div className="absolute inset-0 animate-pulse-ring rounded-full" />
-              <div className="relative flex h-10 w-10 items-center justify-center rounded-full bg-gradient-primary shadow-glow ring-4 ring-background">
-                <Navigation className="h-4 w-4 text-primary-foreground" />
-              </div>
-            </div>
-          </div>
-
-          {/* Gig pins */}
-          {visibleGigs.map((g) => {
-            const accepted = acceptedGigIds.includes(g.id);
-            return (
-              <button
-                key={g.id}
-                onClick={() => setSelected(g)}
-                className="absolute -translate-x-1/2 -translate-y-1/2 transition-base hover:scale-110"
-                style={{ left: `${g.x}%`, top: `${g.y}%` }}
-              >
-                <div className={`flex flex-col items-center`}>
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-full border-2 border-background shadow-md ${accepted ? "bg-success" : "bg-accent"}`}>
-                    <Package className={`h-4 w-4 ${accepted ? "text-success-foreground" : "text-accent-foreground"}`} />
-                  </div>
-                  <div className="mt-1 rounded-full bg-card px-2 py-0.5 text-[10px] font-bold shadow-sm">₹{g.payPerWorker}</div>
-                </div>
-              </button>
-            );
-          })}
-
+      {/* Satellite Map */}
+      <section className="px-4 mt-5">
+        <div className="relative h-80 overflow-hidden rounded-2xl border border-border shadow-elevated">
+          <SatelliteMap
+            gigs={visibleGigs}
+            workerLocation={workerLocation}
+            acceptedGigIds={acceptedGigIds}
+            onSelect={(g) => setSelected(g)}
+            zoom={11}
+          />
           {!workerOnline && (
-            <div className="absolute inset-0 flex items-center justify-center bg-background/70 backdrop-blur-sm">
+            <div className="absolute inset-0 z-[400] flex items-center justify-center bg-background/80 backdrop-blur-sm">
               <div className="text-center">
                 <div className="font-display text-base font-bold">You're offline</div>
                 <div className="text-xs text-muted-foreground">Turn on to view gigs near you</div>
@@ -116,7 +85,7 @@ const Worker = () => {
       </section>
 
       {/* Gig list */}
-      <section className="container mt-6 pb-24">
+      <section className="px-4 mt-6 pb-24">
         <div className="flex items-center justify-between">
           <h2 className="font-display text-lg font-bold">Available near you</h2>
           <span className="text-xs text-muted-foreground">{visibleGigs.length} gigs</span>
@@ -129,18 +98,18 @@ const Worker = () => {
               <button
                 key={g.id}
                 onClick={() => setSelected(g)}
-                className="group block w-full rounded-2xl border border-border bg-card p-4 text-left transition-base hover:border-accent hover:shadow-elevated"
+                className="group block w-full rounded-2xl border border-border bg-card p-4 text-left transition-base hover:border-primary hover:shadow-elevated"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <div className="text-xs font-semibold uppercase tracking-wider text-accent">{g.companyName}</div>
+                    <div className="text-xs font-semibold uppercase tracking-wider text-primary">{g.companyName}</div>
                     <div className="mt-0.5 truncate font-display text-base font-bold">{g.title}</div>
                     <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
                       <MapPin className="h-3 w-3" /> {g.location} · {g.distanceKm} km
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="font-display text-2xl font-extrabold">₹{g.payPerWorker}</div>
+                    <div className="font-display text-2xl font-extrabold text-primary">₹{g.payPerWorker}</div>
                     <div className="text-[10px] uppercase tracking-wider text-muted-foreground">per worker</div>
                   </div>
                 </div>
@@ -188,17 +157,17 @@ const Pill = ({ icon: Icon, children }: { icon: any; children: React.ReactNode }
 
 const GigSheet = ({ gig, accepted, onClose, onAccept }: { gig: Gig; accepted: boolean; onClose: () => void; onAccept: () => void }) => {
   return (
-    <div className="fixed inset-0 z-50 flex items-end bg-foreground/40" onClick={onClose}>
-      <div className="w-full animate-fade-up rounded-t-3xl bg-card p-6 shadow-elevated" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[500] flex items-end justify-center bg-background/70 backdrop-blur-sm" onClick={onClose}>
+      <div className="w-full max-w-md animate-fade-up rounded-t-3xl border-t border-border bg-card p-6 shadow-elevated" onClick={(e) => e.stopPropagation()}>
         <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-muted" />
         <div className="flex items-start justify-between gap-3">
           <div>
-            <div className="text-xs font-semibold uppercase tracking-wider text-accent">{gig.companyName}</div>
+            <div className="text-xs font-semibold uppercase tracking-wider text-primary">{gig.companyName}</div>
             <div className="mt-0.5 font-display text-xl font-extrabold leading-tight">{gig.title}</div>
             <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground"><MapPin className="h-3 w-3" /> {gig.location} · {gig.distanceKm} km</div>
           </div>
           <div className="text-right">
-            <div className="font-display text-3xl font-extrabold">₹{gig.payPerWorker}</div>
+            <div className="font-display text-3xl font-extrabold text-primary">₹{gig.payPerWorker}</div>
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground">per worker</div>
           </div>
         </div>
@@ -223,7 +192,7 @@ const GigSheet = ({ gig, accepted, onClose, onAccept }: { gig: Gig; accepted: bo
             <IndianRupee className="h-4 w-4" /> Direct payout · 0% commission
           </div>
           <Button variant="ghost" onClick={onClose}>Skip</Button>
-          <Button disabled={accepted} onClick={onAccept} className="bg-accent text-accent-foreground hover:bg-accent/90 disabled:opacity-60">
+          <Button disabled={accepted} onClick={onAccept} className="bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-60">
             {accepted ? "Accepted" : "Accept gig"}
           </Button>
         </div>
@@ -234,7 +203,7 @@ const GigSheet = ({ gig, accepted, onClose, onAccept }: { gig: Gig; accepted: bo
 
 const Box = ({ icon: Icon, label, value }: { icon: any; label: string; value: string }) => (
   <div className="rounded-xl border border-border bg-muted/30 p-3 text-center">
-    <Icon className="mx-auto h-4 w-4 text-accent" />
+    <Icon className="mx-auto h-4 w-4 text-primary" />
     <div className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</div>
     <div className="font-display text-base font-extrabold">{value}</div>
   </div>
