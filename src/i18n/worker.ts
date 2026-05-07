@@ -269,7 +269,7 @@ export function setStoredLang(l: Lang) {
 export function makeT(lang: Lang) {
   return (key: keyof typeof translations["en"], vars?: Record<string, string | number>) => {
     let s = translations[lang][key] ?? translations.en[key] ?? String(key);
-    if (vars) for (const k in vars) s = s.replaceAll(`{${k}}`, String(vars[k]));
+    if (vars) for (const k in vars) s = s.split(`{${k}}`).join(String(vars[k]));
     return s;
   };
 }
