@@ -2,101 +2,72 @@
 @tailwind components;
 @tailwind utilities;
 
-/* GroundForce design system — built for blue-collar gig operations.
-   Colors are HSL only. Tokens drive every surface, never raw colors in components. */
+@import "leaflet/dist/leaflet.css";
+
+/* GroundForce dark design system — electric lime + cyan on near-black slate */
 
 @layer base {
   :root {
-    /* Core surfaces */
-    --background: 220 25% 97%;
-    --foreground: 220 40% 12%;
+    --background: 222 30% 6%;
+    --foreground: 150 20% 96%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 220 40% 12%;
+    --card: 222 28% 9%;
+    --card-foreground: 150 15% 96%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 220 40% 12%;
+    --popover: 222 28% 9%;
+    --popover-foreground: 150 15% 96%;
 
-    /* Brand: deep industrial navy */
-    --primary: 220 55% 16%;
-    --primary-foreground: 35 90% 96%;
-    --primary-glow: 220 50% 28%;
+    /* Electric lime — primary action */
+    --primary: 84 90% 58%;
+    --primary-foreground: 222 50% 8%;
+    --primary-glow: 80 95% 65%;
 
-    /* Safety orange — high-vis worker accent */
-    --accent: 22 100% 54%;
-    --accent-foreground: 220 55% 12%;
-    --accent-glow: 30 100% 62%;
+    /* Cyan — accent */
+    --accent: 180 95% 55%;
+    --accent-foreground: 222 50% 8%;
+    --accent-glow: 185 95% 65%;
 
-    /* Hi-vis yellow secondary */
-    --secondary: 45 100% 55%;
-    --secondary-foreground: 220 55% 12%;
+    --secondary: 222 24% 14%;
+    --secondary-foreground: 150 15% 96%;
 
-    --muted: 220 20% 93%;
-    --muted-foreground: 220 15% 40%;
+    --muted: 222 22% 14%;
+    --muted-foreground: 220 10% 65%;
 
-    --success: 145 65% 38%;
-    --success-foreground: 0 0% 100%;
+    --success: 142 75% 50%;
+    --success-foreground: 222 50% 8%;
 
-    --destructive: 0 75% 50%;
+    --destructive: 0 80% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 20% 88%;
-    --input: 220 20% 90%;
-    --ring: 22 100% 54%;
+    --border: 222 22% 17%;
+    --input: 222 22% 14%;
+    --ring: 84 90% 58%;
 
     --radius: 0.875rem;
 
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-glow)) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(var(--accent)) 0%, hsl(var(--accent-glow)) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(220 55% 14%) 0%, hsl(220 60% 22%) 50%, hsl(22 90% 48%) 100%);
-    --gradient-surface: linear-gradient(180deg, hsl(220 25% 99%) 0%, hsl(220 25% 95%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(84 90% 58%) 0%, hsl(160 90% 55%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(180 95% 55%) 0%, hsl(210 95% 60%) 100%);
+    --gradient-hero:
+      radial-gradient(ellipse at top left, hsl(180 90% 30% / 0.35), transparent 50%),
+      radial-gradient(ellipse at bottom right, hsl(84 90% 35% / 0.35), transparent 50%),
+      linear-gradient(135deg, hsl(222 35% 6%) 0%, hsl(222 30% 10%) 100%);
+    --gradient-surface: linear-gradient(180deg, hsl(222 28% 10%) 0%, hsl(222 30% 7%) 100%);
 
-    /* Shadows */
-    --shadow-sm: 0 1px 2px hsl(220 40% 12% / 0.06);
-    --shadow-md: 0 6px 18px -6px hsl(220 40% 12% / 0.18);
-    --shadow-lg: 0 20px 40px -12px hsl(220 40% 12% / 0.22);
-    --shadow-glow: 0 0 32px hsl(var(--accent) / 0.45);
+    --shadow-sm: 0 1px 2px hsl(0 0% 0% / 0.4);
+    --shadow-md: 0 8px 24px -8px hsl(0 0% 0% / 0.6);
+    --shadow-lg: 0 24px 48px -16px hsl(0 0% 0% / 0.7);
+    --shadow-glow: 0 0 32px hsl(var(--primary) / 0.45), 0 0 12px hsl(var(--accent) / 0.25);
 
     --transition-base: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
-    /* Sidebar (kept for shadcn compat) */
-    --sidebar-background: 220 25% 97%;
-    --sidebar-foreground: 220 40% 20%;
-    --sidebar-primary: 220 55% 16%;
-    --sidebar-primary-foreground: 35 90% 96%;
-    --sidebar-accent: 220 20% 93%;
-    --sidebar-accent-foreground: 220 40% 20%;
-    --sidebar-border: 220 20% 88%;
-    --sidebar-ring: 22 100% 54%;
-  }
-
-  .dark {
-    --background: 220 35% 8%;
-    --foreground: 220 15% 95%;
-    --card: 220 35% 11%;
-    --card-foreground: 220 15% 95%;
-    --popover: 220 35% 11%;
-    --popover-foreground: 220 15% 95%;
-    --primary: 22 100% 54%;
-    --primary-foreground: 220 55% 10%;
-    --primary-glow: 30 100% 62%;
-    --accent: 22 100% 54%;
-    --accent-foreground: 220 55% 10%;
-    --accent-glow: 30 100% 62%;
-    --secondary: 45 100% 55%;
-    --secondary-foreground: 220 55% 10%;
-    --muted: 220 25% 16%;
-    --muted-foreground: 220 15% 65%;
-    --success: 145 60% 45%;
-    --success-foreground: 0 0% 100%;
-    --destructive: 0 70% 55%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 220 25% 18%;
-    --input: 220 25% 18%;
-    --ring: 22 100% 54%;
-    --gradient-primary: linear-gradient(135deg, hsl(220 35% 14%) 0%, hsl(220 35% 22%) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(220 40% 8%) 0%, hsl(220 35% 16%) 50%, hsl(22 90% 40%) 100%);
+    --sidebar-background: 222 28% 8%;
+    --sidebar-foreground: 150 15% 90%;
+    --sidebar-primary: 84 90% 58%;
+    --sidebar-primary-foreground: 222 50% 8%;
+    --sidebar-accent: 222 22% 14%;
+    --sidebar-accent-foreground: 150 15% 96%;
+    --sidebar-border: 222 22% 17%;
+    --sidebar-ring: 84 90% 58%;
   }
 }
 
@@ -119,8 +90,8 @@
 
   .grid-bg {
     background-image:
-      linear-gradient(hsl(var(--border)) 1px, transparent 1px),
-      linear-gradient(90deg, hsl(var(--border)) 1px, transparent 1px);
+      linear-gradient(hsl(var(--border) / 0.6) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--border) / 0.6) 1px, transparent 1px);
     background-size: 28px 28px;
   }
 
@@ -133,7 +104,7 @@
     position: absolute;
     inset: 0;
     border-radius: 9999px;
-    background: hsl(var(--accent) / 0.5);
+    background: hsl(var(--primary) / 0.5);
     animation: pulse-ring 1.8s cubic-bezier(0.4,0,0.2,1) infinite;
   }
 
@@ -142,4 +113,22 @@
     to { opacity: 1; transform: translateY(0); }
   }
   .animate-fade-up { animation: fade-up 0.4s ease-out both; }
+
+  /* Leaflet dark tweaks */
+  .leaflet-container { background: hsl(var(--background)); font-family: inherit; }
+  .leaflet-control-attribution {
+    background: hsl(var(--card) / 0.7) !important;
+    color: hsl(var(--muted-foreground)) !important;
+    backdrop-filter: blur(6px);
+  }
+  .leaflet-control-attribution a { color: hsl(var(--accent)) !important; }
+  .leaflet-control-zoom a {
+    background: hsl(var(--card)) !important;
+    color: hsl(var(--foreground)) !important;
+    border-color: hsl(var(--border)) !important;
+  }
+  .leaflet-popup-content-wrapper, .leaflet-popup-tip {
+    background: hsl(var(--card)) !important;
+    color: hsl(var(--card-foreground)) !important;
+  }
 }
