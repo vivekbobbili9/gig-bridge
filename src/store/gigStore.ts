@@ -1,8 +1,9 @@
 import { create } from "zustand";
 
-export type GigStatus = "open" | "assigned" | "in_progress" | "completed";
+export type GigStatus = "open" | "assigned" | "in_progress" | "completed" | "cancelled";
 export type TaskType = "loading" | "unloading" | "pickup" | "delivery" | "mixed";
 export type KycStatus = "none" | "pending" | "verified";
+export type NoticeType = "accepted" | "on_the_way" | "worker_cancelled" | "company_cancelled";
 
 export interface Gig {
   id: string;
@@ -64,6 +65,15 @@ export interface KycData {
   upi?: string;
 }
 
+export interface AppNotice {
+  id: string;
+  type: NoticeType;
+  gigId: string;
+  gigTitle: string;
+  message: string;
+  createdAt: number;
+}
+
 interface GigStore {
   gigs: Gig[];
   workerOnline: boolean;
@@ -74,9 +84,12 @@ interface GigStore {
   positions: Record<string, WorkerPosition[]>;
   penalties: Penalty[];
   kyc: KycData;
+  companyNotices: AppNotice[];
+  workerNotices: AppNotice[];
   addGig: (g: Omit<Gig, "id" | "status" | "createdAt" | "workersAccepted" | "lat" | "lng" | "distanceKm">) => void;
   acceptGig: (id: string, dates: string[]) => void;
   cancelGig: (id: string) => void;
+  cancelGigByCompany: (id: string) => void;
   toggleOnline: () => void;
   tickPositions: () => void;
   setKyc: (data: Partial<KycData> & { status: KycStatus }) => void;
@@ -154,6 +167,8 @@ export const useGigStore = create<GigStore>((set, get) => ({
   positions: seedPositions,
   penalties: [],
   kyc: { status: "none" },
+  companyNotices: [],
+  workerNotices: [],
   addGig: (g) =>
     set((s) => {
       const newGig: Gig = {
@@ -189,6 +204,7 @@ export const useGigStore = create<GigStore>((set, get) => ({
       // Seed worker position for live tracking
       const myGig = s.gigs.find((g) => g.id === id);
       const positions = { ...s.positions };
+      const companyNotices = [...s.companyNotices];
       if (myGig && !exists) {
         const list = positions[id] ?? [];
         if (!list.find((p) => p.workerId === s.workerId)) {
@@ -203,13 +219,15 @@ export const useGigStore = create<GigStore>((set, get) => ({
             etaMin: etaMinutesFromDistance(distanceKm),
             updatedAt: Date.now(),
           }];
+          companyNotices.unshift(makeNotice("on_the_way", myGig, `${s.workerName} is on the way for ${myGig.title}.`));
         }
+        companyNotices.unshift(makeNotice("accepted", myGig, `${s.workerName} accepted ${myGig.title} (${dates.length} day${dates.length !== 1 ? "s" : ""}).`));
       }
 
       return {
         accepted, penalties, gigs: gigs.map((g) =>
           g.id === id && !exists ? { ...g, workersAccepted: Math.min(g.workersNeeded, g.workersAccepted + 1) } : g
-        ), positions,
+        ), positions, companyNotices,
       };
     }),
   cancelGig: (id) =>
@@ -230,11 +248,34 @@ export const useGigStore = create<GigStore>((set, get) => ({
 
       const positions = { ...s.positions };
       if (positions[id]) positions[id] = positions[id].filter((p) => p.workerId !== s.workerId);
+      const companyNotices = gig
+        ? [makeNotice("worker_cancelled", gig, `${s.workerName} cancelled ${gig.title}.`), ...s.companyNotices]
+        : s.companyNotices;
 
       return {
         accepted: s.accepted.filter((a) => a.gigId !== id),
         gigs: s.gigs.map((g) => g.id === id ? { ...g, workersAccepted: Math.max(0, g.workersAccepted - 1) } : g),
-        penalties, positions,
+        penalties, positions, companyNotices,
+      };
+    }),
+  cancelGigByCompany: (id) =>
+    set((s) => {
+      const gig = s.gigs.find((g) => g.id === id);
+      if (!gig || gig.status === "cancelled") return s;
+      const hadWorkerAccepted = s.accepted.some((a) => a.gigId === id);
+      const companyNotices = [
+        makeNotice("company_cancelled", gig, `You cancelled ${gig.title}.`),
+        ...s.companyNotices,
+      ];
+      const workerNotices = hadWorkerAccepted
+        ? [makeNotice("company_cancelled", gig, `${gig.companyName} cancelled ${gig.title}.`), ...s.workerNotices]
+        : s.workerNotices;
+      return {
+        gigs: s.gigs.map((g) => g.id === id ? { ...g, status: "cancelled", workersAccepted: 0 } : g),
+        accepted: s.accepted.filter((a) => a.gigId !== id),
+        positions: { ...s.positions, [id]: [] },
+        companyNotices,
+        workerNotices,
       };
     }),
   toggleOnline: () => set((s) => ({ workerOnline: !s.workerOnline })),
@@ -293,3 +334,12 @@ const haversineKm = (a: { lat: number; lng: number }, b: { lat: number; lng: num
 
 const etaMinutesFromDistance = (distanceKm: number) =>
   distanceKm <= 0 ? 0 : Math.max(1, Math.round((distanceKm / TRAVEL_SPEED_KMPH) * 60));
+
+const makeNotice = (type: NoticeType, gig: Gig, message: string): AppNotice => ({
+  id: `n-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+  type,
+  gigId: gig.id,
+  gigTitle: gig.title,
+  message,
+  createdAt: Date.now(),
+});

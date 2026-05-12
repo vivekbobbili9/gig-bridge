@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useGigStore, type TaskType, type Gig } from "@/store/gigStore";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import SatelliteMap from "@/components/SatelliteMap";
-import { ArrowLeft, Building2, CheckCircle2, Clock, IndianRupee, MapPin, Plus, Radio, ShieldCheck, Users, Wallet } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Building2, CheckCircle2, Clock, IndianRupee, MapPin, Plus, Radio, ShieldCheck, Users, Wallet, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { fetchDrivingRoute } from "@/lib/routing";
 
@@ -21,9 +21,11 @@ const taskOptions: { value: TaskType; label: string }[] = [
 ];
 
 const Company = () => {
-  const { gigs, positions, addGig, tickPositions, payWorkers } = useGigStore();
+  const { gigs, positions, addGig, tickPositions, payWorkers, cancelGigByCompany, companyNotices } = useGigStore();
   const [open, setOpen] = useState(false);
   const [tracking, setTracking] = useState<Gig | null>(null);
+  const [cancelGig, setCancelGig] = useState<Gig | null>(null);
+  const lastNoticeRef = useRef<string | null>(null);
 
   // Live tick worker positions every 3s
   useEffect(() => {
@@ -33,11 +35,20 @@ const Company = () => {
 
   const myGigs = useMemo(() => gigs.slice(0, 8), [gigs]);
   const totals = useMemo(() => {
-    const active = gigs.filter((g) => g.status !== "completed").length;
+    const active = gigs.filter((g) => g.status !== "completed" && g.status !== "cancelled").length;
     const filled = gigs.reduce((a, g) => a + g.workersAccepted, 0);
     const needed = gigs.reduce((a, g) => a + g.workersNeeded, 0);
     return { active, filled, needed };
   }, [gigs]);
+  const recentNotices = useMemo(() => companyNotices.slice(0, 4), [companyNotices]);
+
+  useEffect(() => {
+    if (companyNotices.length === 0) return;
+    const newest = companyNotices[0];
+    if (lastNoticeRef.current === newest.id) return;
+    lastNoticeRef.current = newest.id;
+    toast.info(newest.message);
+  }, [companyNotices]);
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -78,6 +89,22 @@ const Company = () => {
           <h2 className="font-display text-xl font-bold">Live tickets</h2>
           <span className="text-xs text-muted-foreground">Updated just now</span>
         </div>
+
+        <Card className="mt-4 p-4">
+          <div className="flex items-center gap-2 text-sm font-semibold"><AlertTriangle className="h-4 w-4 text-primary" /> Company alerts</div>
+          {recentNotices.length === 0 ? (
+            <div className="mt-2 text-xs text-muted-foreground">No new updates yet.</div>
+          ) : (
+            <div className="mt-3 space-y-2">
+              {recentNotices.map((n) => (
+                <div key={n.id} className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs">
+                  <div className="font-semibold">{n.gigTitle}</div>
+                  <div className="text-muted-foreground">{n.message}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
 
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
           {myGigs.map((g) => {
@@ -144,6 +171,11 @@ const Company = () => {
                   }}>
                     <Wallet className="mr-1.5 h-3.5 w-3.5" /> Pay workers
                   </Button>
+                  {g.status !== "cancelled" && (
+                    <Button size="sm" variant="destructive" onClick={() => setCancelGig(g)}>
+                      <XCircle className="mr-1.5 h-3.5 w-3.5" /> Cancel
+                    </Button>
+                  )}
                 </div>
               </Card>
             );
@@ -153,6 +185,12 @@ const Company = () => {
 
       {open && <NewTicketDialog onClose={() => setOpen(false)} onCreate={(g) => { addGig(g); toast.success("Ticket published — workers are being notified"); setOpen(false); }} />}
       {tracking && <TrackingDialog gig={tracking} onClose={() => setTracking(null)} />}
+      {cancelGig && <CompanyCancelDialog gig={cancelGig} onClose={() => setCancelGig(null)} onConfirm={() => {
+        cancelGigByCompany(cancelGig.id);
+        toast.success("Gig cancelled and workers notified.");
+        setTracking((prev) => (prev?.id === cancelGig.id ? null : prev));
+        setCancelGig(null);
+      }} />}
     </div>
   );
 };
@@ -311,6 +349,24 @@ const Field = ({ label, children, full }: { label: string; children: React.React
   <div className={full ? "sm:col-span-2" : ""}>
     <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</Label>
     <div className="mt-1.5">{children}</div>
+  </div>
+);
+
+const CompanyCancelDialog = ({ gig, onClose, onConfirm }: { gig: Gig; onClose: () => void; onConfirm: () => void }) => (
+  <div className="fixed inset-0 z-[70] flex items-center justify-center bg-foreground/60 p-4" onClick={onClose}>
+    <div className="w-full max-w-md rounded-2xl border border-destructive/40 bg-card p-5 shadow-elevated" onClick={(e) => e.stopPropagation()}>
+      <div className="flex items-center gap-2 text-destructive">
+        <XCircle className="h-5 w-5" />
+        <h3 className="font-display text-lg font-bold">Cancel this gig?</h3>
+      </div>
+      <p className="mt-2 text-sm text-muted-foreground">
+        This will remove all en-route workers from <span className="font-semibold text-foreground">{gig.title}</span> and notify them immediately.
+      </p>
+      <div className="mt-5 flex gap-3">
+        <Button variant="ghost" className="flex-1" onClick={onClose}>Keep gig</Button>
+        <Button variant="destructive" className="flex-1" onClick={onConfirm}>Cancel gig</Button>
+      </div>
+    </div>
   </div>
 );
 

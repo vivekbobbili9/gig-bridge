@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useGigStore, datesBetween, type Gig } from "@/store/gigStore";
 import { Button } from "@/components/ui/button";
@@ -12,12 +12,13 @@ import { LANGS, type Lang, getStoredLang, setStoredLang, makeT, tr } from "@/i18
 type SortKey = "pay" | "hours" | "distance";
 
 const Worker = () => {
-  const { gigs, workerOnline, workerLocation, accepted, kyc, penalties, toggleOnline, acceptGig, cancelGig } = useGigStore();
+  const { gigs, workerOnline, workerLocation, accepted, kyc, penalties, toggleOnline, acceptGig, cancelGig, workerNotices } = useGigStore();
   const [selected, setSelected] = useState<Gig | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("pay");
   const [lang, setLang] = useState<Lang>(getStoredLang());
   const [langOpen, setLangOpen] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState<Gig | null>(null);
+  const lastWorkerNoticeRef = useRef<string | null>(null);
   const t = useMemo(() => makeT(lang), [lang]);
   const changeLang = (l: Lang) => { setLang(l); setStoredLang(l); setLangOpen(false); };
 
@@ -41,6 +42,15 @@ const Worker = () => {
 
   const currentLang = LANGS.find((l) => l.code === lang)!;
   const kycVerified = kyc.status === "verified";
+
+  useEffect(() => {
+    if (workerNotices.length === 0) return;
+    const newest = workerNotices[0];
+    if (lastWorkerNoticeRef.current === newest.id) return;
+    lastWorkerNoticeRef.current = newest.id;
+    if (newest.type === "company_cancelled") toast.error(newest.message);
+    else toast.info(newest.message);
+  }, [workerNotices]);
 
   const handleAccept = (g: Gig, dates: string[]) => {
     if (!kycVerified) {
