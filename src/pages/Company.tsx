@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import SatelliteMap from "@/components/SatelliteMap";
-import { AlertTriangle, ArrowLeft, Building2, CheckCircle2, Clock, IndianRupee, MapPin, Plus, Radio, ShieldCheck, Users, Wallet, XCircle } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Building2, CheckCircle2, Clock, IndianRupee, MapPin, MessageSquare, Plus, Radio, ShieldCheck, Star, Users, Wallet, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { fetchDrivingRoute } from "@/lib/routing";
 
@@ -21,10 +21,12 @@ const taskOptions: { value: TaskType; label: string }[] = [
 ];
 
 const Company = () => {
-  const { gigs, positions, addGig, tickPositions, payWorkers, cancelGigByCompany, companyNotices } = useGigStore();
+  const { gigs, positions, addGig, tickPositions, payWorkers, cancelGigByCompany, companyNotices, completeGig, chatsByGig, sendCompanyMessage, ratings, submitCompanyRating } = useGigStore();
   const [open, setOpen] = useState(false);
   const [tracking, setTracking] = useState<Gig | null>(null);
   const [cancelGig, setCancelGig] = useState<Gig | null>(null);
+  const [chatGig, setChatGig] = useState<Gig | null>(null);
+  const [rateGig, setRateGig] = useState<Gig | null>(null);
   const lastNoticeRef = useRef<string | null>(null);
 
   // Live tick worker positions every 3s
@@ -112,6 +114,9 @@ const Company = () => {
             const livePositions = positions[g.id] ?? [];
             const closestEta = livePositions.length ? Math.min(...livePositions.map((p) => p.etaMin)) : null;
             const closestDistance = livePositions.length ? Math.min(...livePositions.map((p) => p.distanceKm)) : null;
+            const workerRated = ratings.some((r) => r.gigId === g.id && r.by === "company");
+            const workerRatings = ratings.filter((r) => r.by === "worker" && r.gigId === g.id);
+            const workerAvg = workerRatings.length ? (workerRatings.reduce((a, r) => a + r.score, 0) / workerRatings.length).toFixed(1) : null;
             return (
               <Card key={g.id} className="overflow-hidden p-5 transition-base hover:shadow-elevated">
                 <div className="flex items-start justify-between gap-3">
@@ -164,6 +169,9 @@ const Company = () => {
                   <Button size="sm" variant="outline" className="flex-1" onClick={() => setTracking(g)}>
                     <Radio className="mr-1.5 h-3.5 w-3.5" /> Live track
                   </Button>
+                  <Button size="sm" variant="outline" className="flex-1" onClick={() => setChatGig(g)}>
+                    <MessageSquare className="mr-1.5 h-3.5 w-3.5" /> Chat
+                  </Button>
                   <Button size="sm" className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => {
                     const n = payWorkers(g.id);
                     if (n === 0) toast.error("No workers to pay yet");
@@ -171,12 +179,26 @@ const Company = () => {
                   }}>
                     <Wallet className="mr-1.5 h-3.5 w-3.5" /> Pay workers
                   </Button>
+                  {g.status !== "completed" && g.status !== "cancelled" && (
+                    <Button size="sm" variant="secondary" onClick={() => {
+                      completeGig(g.id);
+                      toast.success("Gig marked complete.");
+                    }}>
+                      <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" /> Finish
+                    </Button>
+                  )}
                   {g.status !== "cancelled" && (
                     <Button size="sm" variant="destructive" onClick={() => setCancelGig(g)}>
                       <XCircle className="mr-1.5 h-3.5 w-3.5" /> Cancel
                     </Button>
                   )}
                 </div>
+                {g.status === "completed" && (
+                  <div className="mt-3 flex items-center justify-between rounded-lg border border-border bg-muted/40 p-2 text-xs">
+                    <span className="inline-flex items-center gap-1"><Star className="h-3.5 w-3.5 text-yellow-400" /> Worker rating {workerAvg ? `${workerAvg}/5` : "pending"}</span>
+                    {!workerRated && <Button size="sm" variant="outline" onClick={() => setRateGig(g)}>Rate now</Button>}
+                  </div>
+                )}
               </Card>
             );
           })}
@@ -185,12 +207,28 @@ const Company = () => {
 
       {open && <NewTicketDialog onClose={() => setOpen(false)} onCreate={(g) => { addGig(g); toast.success("Ticket published — workers are being notified"); setOpen(false); }} />}
       {tracking && <TrackingDialog gig={tracking} onClose={() => setTracking(null)} />}
+      {chatGig && <ChatDialog
+        title={`Chat · ${chatGig.title}`}
+        messages={chatsByGig[chatGig.id] ?? []}
+        me="company"
+        onSend={(text) => sendCompanyMessage(chatGig.id, text)}
+        onClose={() => setChatGig(null)}
+      />}
       {cancelGig && <CompanyCancelDialog gig={cancelGig} onClose={() => setCancelGig(null)} onConfirm={() => {
         cancelGigByCompany(cancelGig.id);
         toast.success("Gig cancelled and workers notified.");
         setTracking((prev) => (prev?.id === cancelGig.id ? null : prev));
         setCancelGig(null);
       }} />}
+      {rateGig && <RatingDialog
+        title={`Rate workers · ${rateGig.title}`}
+        onClose={() => setRateGig(null)}
+        onSubmit={(score, complaint) => {
+          submitCompanyRating(rateGig.id, score, complaint);
+          toast.success("Anonymous rating submitted.");
+          setRateGig(null);
+        }}
+      />}
     </div>
   );
 };
@@ -369,5 +407,65 @@ const CompanyCancelDialog = ({ gig, onClose, onConfirm }: { gig: Gig; onClose: (
     </div>
   </div>
 );
+
+const ChatDialog = ({ title, messages, me, onSend, onClose }: {
+  title: string;
+  messages: { id: string; sender: "worker" | "company"; text: string }[];
+  me: "worker" | "company";
+  onSend: (text: string) => void;
+  onClose: () => void;
+}) => {
+  const [text, setText] = useState("");
+  return (
+    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-foreground/60 p-4" onClick={onClose}>
+      <div className="w-full max-w-lg rounded-2xl border border-border bg-card p-4 shadow-elevated" onClick={(e) => e.stopPropagation()}>
+        <div className="mb-3 flex items-center justify-between"><h3 className="font-display text-lg font-bold">{title}</h3><Button size="sm" variant="ghost" onClick={onClose}>Close</Button></div>
+        <div className="h-72 space-y-2 overflow-y-auto rounded-lg border border-border bg-muted/30 p-3">
+          {messages.length === 0 && <div className="text-xs text-muted-foreground">No messages yet.</div>}
+          {messages.map((m) => (
+            <div key={m.id} className={`max-w-[80%] rounded-lg px-3 py-2 text-xs ${m.sender === me ? "ml-auto bg-primary text-primary-foreground" : "bg-card border border-border"}`}>
+              {m.text}
+            </div>
+          ))}
+        </div>
+        <div className="mt-3 flex gap-2">
+          <Input value={text} onChange={(e) => setText(e.target.value)} placeholder="Type a message..." />
+          <Button onClick={() => { onSend(text); setText(""); }}>Send</Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const RatingDialog = ({ title, onSubmit, onClose }: {
+  title: string;
+  onSubmit: (score: number, complaint?: string) => void;
+  onClose: () => void;
+}) => {
+  const [score, setScore] = useState(5);
+  const [complaint, setComplaint] = useState("");
+  return (
+    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-foreground/60 p-4" onClick={onClose}>
+      <div className="w-full max-w-md rounded-2xl border border-border bg-card p-5 shadow-elevated" onClick={(e) => e.stopPropagation()}>
+        <h3 className="font-display text-lg font-bold">{title}</h3>
+        <div className="mt-3">
+          <Label>Rating (anonymous)</Label>
+          <Select value={String(score)} onValueChange={(v) => setScore(Number(v))}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>{[5, 4, 3, 2, 1].map((n) => <SelectItem key={n} value={String(n)}>{n} / 5</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
+        <div className="mt-3">
+          <Label>Complaint (optional)</Label>
+          <Textarea rows={3} value={complaint} onChange={(e) => setComplaint(e.target.value)} placeholder="Add issue details if any..." />
+        </div>
+        <div className="mt-4 flex gap-2">
+          <Button variant="ghost" className="flex-1" onClick={onClose}>Cancel</Button>
+          <Button className="flex-1" onClick={() => onSubmit(score, complaint)}>Submit</Button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default Company;

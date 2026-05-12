@@ -5,19 +5,21 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import SatelliteMap from "@/components/SatelliteMap";
 import RouteMap from "@/components/RouteMap";
-import { ArrowLeft, Bell, Calendar, CheckCircle2, Clock, Globe, IndianRupee, MapPin, Navigation, Package, ShieldCheck, ShieldAlert, Truck, User, Wallet, X } from "lucide-react";
+import { ArrowLeft, Bell, Calendar, CheckCircle2, Clock, Globe, IndianRupee, MapPin, MessageSquare, Navigation, Package, ShieldCheck, ShieldAlert, Star, Truck, User, Wallet, X } from "lucide-react";
 import { toast } from "sonner";
 import { LANGS, type Lang, getStoredLang, setStoredLang, makeT, tr } from "@/i18n/worker";
 
 type SortKey = "pay" | "hours" | "distance";
 
 const Worker = () => {
-  const { gigs, workerOnline, workerLocation, accepted, kyc, penalties, toggleOnline, acceptGig, cancelGig, workerNotices } = useGigStore();
+  const { gigs, workerOnline, workerLocation, accepted, kyc, penalties, toggleOnline, acceptGig, cancelGig, workerNotices, chatsByGig, sendWorkerMessage, ratings, submitWorkerRating } = useGigStore();
   const [selected, setSelected] = useState<Gig | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("pay");
   const [lang, setLang] = useState<Lang>(getStoredLang());
   const [langOpen, setLangOpen] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState<Gig | null>(null);
+  const [chatGig, setChatGig] = useState<Gig | null>(null);
+  const [rateGig, setRateGig] = useState<Gig | null>(null);
   const lastWorkerNoticeRef = useRef<string | null>(null);
   const t = useMemo(() => makeT(lang), [lang]);
   const changeLang = (l: Lang) => { setLang(l); setStoredLang(l); setLangOpen(false); };
@@ -42,6 +44,10 @@ const Worker = () => {
 
   const currentLang = LANGS.find((l) => l.code === lang)!;
   const kycVerified = kyc.status === "verified";
+  const completedAccepted = useMemo(
+    () => accepted.map((a) => gigs.find((g) => g.id === a.gigId)).filter((g): g is Gig => Boolean(g && g.status === "completed")),
+    [accepted, gigs],
+  );
 
   useEffect(() => {
     if (workerNotices.length === 0) return;
@@ -135,6 +141,25 @@ const Worker = () => {
       </section>
 
       <section className="mt-6 px-4 pb-24">
+        {completedAccepted.length > 0 && (
+          <div className="mb-4 rounded-2xl border border-border bg-card p-3">
+            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Completed gigs</div>
+            <div className="mt-2 space-y-2">
+              {completedAccepted.map((g) => {
+                const workerRated = ratings.some((r) => r.gigId === g.id && r.by === "worker");
+                const companyRatings = ratings.filter((r) => r.gigId === g.id && r.by === "company");
+                const avg = companyRatings.length ? (companyRatings.reduce((a, r) => a + r.score, 0) / companyRatings.length).toFixed(1) : null;
+                return (
+                  <div key={g.id} className="flex items-center justify-between rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs">
+                    <span className="inline-flex items-center gap-1"><Star className="h-3.5 w-3.5 text-yellow-400" /> {tr(g.title, lang)} · Business {avg ? `${avg}/5` : "unrated"}</span>
+                    {!workerRated && <Button size="sm" variant="outline" onClick={() => setRateGig(g)}>Rate</Button>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center justify-between">
           <h2 className="font-display text-lg font-bold">{t("available")}</h2>
           <span className="text-xs text-muted-foreground">{t("gigs_count", { n: visibleGigs.length })}</span>
@@ -196,6 +221,7 @@ const Worker = () => {
           onClose={() => setSelected(null)}
           onAccept={(dates) => handleAccept(selected, dates)}
           onCancelGig={() => setConfirmCancel(selected)}
+          onChatGig={() => setChatGig(selected)}
           workerLocation={workerLocation}
           t={t}
         />
@@ -209,6 +235,22 @@ const Worker = () => {
           setSelected(null);
         }} />
       )}
+      {chatGig && <ChatDialog
+        title={`Chat · ${tr(chatGig.companyName, lang)}`}
+        messages={chatsByGig[chatGig.id] ?? []}
+        me="worker"
+        onSend={(text) => sendWorkerMessage(chatGig.id, text)}
+        onClose={() => setChatGig(null)}
+      />}
+      {rateGig && <RatingDialog
+        title={`Rate business · ${tr(rateGig.companyName, lang)}`}
+        onClose={() => setRateGig(null)}
+        onSubmit={(score, complaint) => {
+          submitWorkerRating(rateGig.id, score, complaint);
+          toast.success("Anonymous rating submitted.");
+          setRateGig(null);
+        }}
+      />}
 
       {langOpen && (
         <div className="fixed inset-0 z-[600] flex items-end justify-center bg-background/70 backdrop-blur-sm" onClick={() => setLangOpen(false)}>
@@ -245,7 +287,7 @@ const Pill = ({ icon: Icon, children, tone = "muted" }: { icon: any; children: R
   return <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 font-semibold ${tones[tone]}`}><Icon className="h-3 w-3" /> {children}</span>;
 };
 
-const GigSheet = ({ gig, lang, existingDates, onClose, onAccept, onCancelGig, workerLocation, t }: { gig: Gig; lang: Lang; existingDates: string[]; onClose: () => void; onAccept: (dates: string[]) => void; onCancelGig: () => void; workerLocation: { lat: number; lng: number }; t: ReturnType<typeof makeT> }) => {
+const GigSheet = ({ gig, lang, existingDates, onClose, onAccept, onCancelGig, onChatGig, workerLocation, t }: { gig: Gig; lang: Lang; existingDates: string[]; onClose: () => void; onAccept: (dates: string[]) => void; onCancelGig: () => void; onChatGig: () => void; workerLocation: { lat: number; lng: number }; t: ReturnType<typeof makeT> }) => {
   const allDates = datesBetween(gig.startDate, gig.endDate);
   const [picked, setPicked] = useState<string[]>(existingDates.length ? existingDates : allDates);
   const [showRoute, setShowRoute] = useState(false);
@@ -277,6 +319,9 @@ const GigSheet = ({ gig, lang, existingDates, onClose, onAccept, onCancelGig, wo
         {/* Directions toggle */}
         <button onClick={() => setShowRoute((v) => !v)} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-primary/40 bg-primary/10 py-2.5 text-sm font-bold text-primary transition-base hover:bg-primary/20">
           <Navigation className="h-4 w-4" /> {showRoute ? "Hide route" : t("directions")}
+        </button>
+        <button onClick={onChatGig} className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-muted/30 py-2.5 text-sm font-bold transition-base hover:border-primary hover:text-primary">
+          <MessageSquare className="h-4 w-4" /> Message business
         </button>
 
         {showRoute && (
@@ -356,6 +401,69 @@ const CancelDialog = ({ gig, lang, t, onClose, onConfirm }: { gig: Gig; lang: La
         <div className="mt-5 flex gap-3">
           <Button variant="ghost" onClick={onClose} className="flex-1">{t("keep")}</Button>
           <Button onClick={onConfirm} className="flex-1 bg-destructive text-destructive-foreground hover:bg-destructive/90">{t("cancel_confirm")}</Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ChatDialog = ({ title, messages, me, onSend, onClose }: {
+  title: string;
+  messages: { id: string; sender: "worker" | "company"; text: string }[];
+  me: "worker" | "company";
+  onSend: (text: string) => void;
+  onClose: () => void;
+}) => {
+  const [text, setText] = useState("");
+  return (
+    <div className="fixed inset-0 z-[800] flex items-center justify-center bg-background/80 p-4" onClick={onClose}>
+      <div className="w-full max-w-md rounded-2xl border border-border bg-card p-4 shadow-elevated" onClick={(e) => e.stopPropagation()}>
+        <div className="mb-3 flex items-center justify-between"><h3 className="font-display text-lg font-bold">{title}</h3><Button variant="ghost" size="sm" onClick={onClose}>Close</Button></div>
+        <div className="h-72 space-y-2 overflow-y-auto rounded-lg border border-border bg-muted/30 p-3">
+          {messages.length === 0 && <div className="text-xs text-muted-foreground">No messages yet.</div>}
+          {messages.map((m) => (
+            <div key={m.id} className={`max-w-[80%] rounded-lg px-3 py-2 text-xs ${m.sender === me ? "ml-auto bg-primary text-primary-foreground" : "border border-border bg-card"}`}>
+              {m.text}
+            </div>
+          ))}
+        </div>
+        <div className="mt-3 flex gap-2">
+          <input value={text} onChange={(e) => setText(e.target.value)} className="h-10 flex-1 rounded-md border border-input bg-background px-3 text-sm" placeholder="Type a message..." />
+          <Button onClick={() => { onSend(text); setText(""); }}>Send</Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const RatingDialog = ({ title, onSubmit, onClose }: {
+  title: string;
+  onSubmit: (score: number, complaint?: string) => void;
+  onClose: () => void;
+}) => {
+  const [score, setScore] = useState(5);
+  const [complaint, setComplaint] = useState("");
+  return (
+    <div className="fixed inset-0 z-[810] flex items-center justify-center bg-background/80 p-4" onClick={onClose}>
+      <div className="w-full max-w-md rounded-2xl border border-border bg-card p-5 shadow-elevated" onClick={(e) => e.stopPropagation()}>
+        <h3 className="font-display text-lg font-bold">{title}</h3>
+        <div className="mt-3">
+          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Anonymous rating</div>
+          <div className="mt-2 flex gap-2">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button key={n} onClick={() => setScore(n)} className={`rounded-lg border px-3 py-2 text-sm font-bold ${score >= n ? "border-yellow-400 text-yellow-400" : "border-border text-muted-foreground"}`}>
+                <Star className="inline h-3.5 w-3.5" /> {n}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="mt-3">
+          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Complaint (optional)</div>
+          <textarea rows={3} value={complaint} onChange={(e) => setComplaint(e.target.value)} className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="Describe issue if any..." />
+        </div>
+        <div className="mt-4 flex gap-2">
+          <Button variant="ghost" className="flex-1" onClick={onClose}>Cancel</Button>
+          <Button className="flex-1" onClick={() => onSubmit(score, complaint)}>Submit</Button>
         </div>
       </div>
     </div>

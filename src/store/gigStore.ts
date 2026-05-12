@@ -74,6 +74,23 @@ export interface AppNotice {
   createdAt: number;
 }
 
+export interface ChatMessage {
+  id: string;
+  gigId: string;
+  sender: "worker" | "company";
+  text: string;
+  createdAt: number;
+}
+
+export interface PartyRating {
+  id: string;
+  gigId: string;
+  by: "worker" | "company";
+  score: number;
+  complaint?: string;
+  createdAt: number;
+}
+
 interface GigStore {
   gigs: Gig[];
   workerOnline: boolean;
@@ -86,10 +103,17 @@ interface GigStore {
   kyc: KycData;
   companyNotices: AppNotice[];
   workerNotices: AppNotice[];
+  chatsByGig: Record<string, ChatMessage[]>;
+  ratings: PartyRating[];
   addGig: (g: Omit<Gig, "id" | "status" | "createdAt" | "workersAccepted" | "lat" | "lng" | "distanceKm">) => void;
   acceptGig: (id: string, dates: string[]) => void;
   cancelGig: (id: string) => void;
   cancelGigByCompany: (id: string) => void;
+  completeGig: (id: string) => void;
+  sendWorkerMessage: (gigId: string, text: string) => void;
+  sendCompanyMessage: (gigId: string, text: string) => void;
+  submitWorkerRating: (gigId: string, score: number, complaint?: string) => void;
+  submitCompanyRating: (gigId: string, score: number, complaint?: string) => void;
   toggleOnline: () => void;
   tickPositions: () => void;
   setKyc: (data: Partial<KycData> & { status: KycStatus }) => void;
@@ -169,6 +193,8 @@ export const useGigStore = create<GigStore>((set, get) => ({
   kyc: { status: "none" },
   companyNotices: [],
   workerNotices: [],
+  chatsByGig: {},
+  ratings: [],
   addGig: (g) =>
     set((s) => {
       const newGig: Gig = {
@@ -278,6 +304,57 @@ export const useGigStore = create<GigStore>((set, get) => ({
         workerNotices,
       };
     }),
+  completeGig: (id) =>
+    set((s) => {
+      const gig = s.gigs.find((g) => g.id === id);
+      if (!gig || gig.status === "completed" || gig.status === "cancelled") return s;
+      const workerNotices = s.accepted.some((a) => a.gigId === id)
+        ? [makeNotice("company_cancelled", gig, `${gig.title} is marked complete. Please rate the business.`), ...s.workerNotices]
+        : s.workerNotices;
+      const companyNotices = [makeNotice("accepted", gig, `${gig.title} marked complete. Please rate workers.`), ...s.companyNotices];
+      return {
+        gigs: s.gigs.map((g) => g.id === id ? { ...g, status: "completed" } : g),
+        positions: { ...s.positions, [id]: [] },
+        workerNotices,
+        companyNotices,
+      };
+    }),
+  sendWorkerMessage: (gigId, text) =>
+    set((s) => {
+      const msg = text.trim();
+      if (!msg) return s;
+      const gig = s.gigs.find((g) => g.id === gigId);
+      const chats = s.chatsByGig[gigId] ?? [];
+      const chatsByGig = { ...s.chatsByGig, [gigId]: [...chats, makeChat(gigId, "worker", msg)] };
+      const companyNotices = gig
+        ? [makeNotice("accepted", gig, `New message from worker on ${gig.title}.`), ...s.companyNotices]
+        : s.companyNotices;
+      return { chatsByGig, companyNotices };
+    }),
+  sendCompanyMessage: (gigId, text) =>
+    set((s) => {
+      const msg = text.trim();
+      if (!msg) return s;
+      const gig = s.gigs.find((g) => g.id === gigId);
+      const chats = s.chatsByGig[gigId] ?? [];
+      const chatsByGig = { ...s.chatsByGig, [gigId]: [...chats, makeChat(gigId, "company", msg)] };
+      const workerNotices = gig
+        ? [makeNotice("accepted", gig, `New message from ${gig.companyName}.`), ...s.workerNotices]
+        : s.workerNotices;
+      return { chatsByGig, workerNotices };
+    }),
+  submitWorkerRating: (gigId, score, complaint) =>
+    set((s) => {
+      if (score < 1 || score > 5) return s;
+      if (s.ratings.some((r) => r.gigId === gigId && r.by === "worker")) return s;
+      return { ratings: [...s.ratings, makeRating(gigId, "worker", score, complaint)] };
+    }),
+  submitCompanyRating: (gigId, score, complaint) =>
+    set((s) => {
+      if (score < 1 || score > 5) return s;
+      if (s.ratings.some((r) => r.gigId === gigId && r.by === "company")) return s;
+      return { ratings: [...s.ratings, makeRating(gigId, "company", score, complaint)] };
+    }),
   toggleOnline: () => set((s) => ({ workerOnline: !s.workerOnline })),
   tickPositions: () =>
     set((s) => {
@@ -341,5 +418,22 @@ const makeNotice = (type: NoticeType, gig: Gig, message: string): AppNotice => (
   gigId: gig.id,
   gigTitle: gig.title,
   message,
+  createdAt: Date.now(),
+});
+
+const makeChat = (gigId: string, sender: "worker" | "company", text: string): ChatMessage => ({
+  id: `c-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+  gigId,
+  sender,
+  text,
+  createdAt: Date.now(),
+});
+
+const makeRating = (gigId: string, by: "worker" | "company", score: number, complaint?: string): PartyRating => ({
+  id: `r-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+  gigId,
+  by,
+  score,
+  complaint: complaint?.trim() || undefined,
   createdAt: Date.now(),
 });
