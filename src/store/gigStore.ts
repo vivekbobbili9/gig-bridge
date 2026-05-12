@@ -40,6 +40,7 @@ export interface WorkerPosition {
   lat: number;
   lng: number;
   etaMin: number;
+  distanceKm: number;
   updatedAt: number;
 }
 
@@ -83,6 +84,8 @@ interface GigStore {
 }
 
 const CENTER = { lat: 12.9716, lng: 77.5946 };
+const TRAVEL_SPEED_KMPH = 24;
+const POSITION_TICK_SECONDS = 3;
 
 const today = new Date();
 const iso = (d: Date) => d.toISOString().slice(0, 10);
@@ -132,12 +135,12 @@ const seed: Gig[] = [
 // Seed a few mock workers around Bengaluru for company live tracking
 const seedPositions: Record<string, WorkerPosition[]> = {
   "g-1001": [
-    { workerId: "w-r1", workerName: "Ramesh K.", lat: 12.9750, lng: 77.7100, etaMin: 14, updatedAt: Date.now() },
-    { workerId: "w-s2", workerName: "Suresh M.", lat: 12.9620, lng: 77.7250, etaMin: 9, updatedAt: Date.now() },
-    { workerId: "w-a3", workerName: "Arun P.", lat: 12.9810, lng: 77.6980, etaMin: 22, updatedAt: Date.now() },
+    { workerId: "w-r1", workerName: "Ramesh K.", lat: 12.9750, lng: 77.7100, etaMin: 14, distanceKm: 5.4, updatedAt: Date.now() },
+    { workerId: "w-s2", workerName: "Suresh M.", lat: 12.9620, lng: 77.7250, etaMin: 9, distanceKm: 3.9, updatedAt: Date.now() },
+    { workerId: "w-a3", workerName: "Arun P.", lat: 12.9810, lng: 77.6980, etaMin: 22, distanceKm: 6.6, updatedAt: Date.now() },
   ],
   "g-1004": [
-    { workerId: "w-v1", workerName: "Vikram T.", lat: 12.8500, lng: 77.6700, etaMin: 11, updatedAt: Date.now() },
+    { workerId: "w-v1", workerName: "Vikram T.", lat: 12.8500, lng: 77.6700, etaMin: 11, distanceKm: 2.1, updatedAt: Date.now() },
   ],
 };
 
@@ -192,10 +195,12 @@ export const useGigStore = create<GigStore>((set, get) => ({
           // Start ~3-6km away from gig
           const startLat = myGig.lat + (Math.random() - 0.5) * 0.05;
           const startLng = myGig.lng + (Math.random() - 0.5) * 0.05;
+          const distanceKm = haversineKm({ lat: startLat, lng: startLng }, { lat: myGig.lat, lng: myGig.lng });
           positions[id] = [...list, {
             workerId: s.workerId, workerName: s.workerName,
             lat: startLat, lng: startLng,
-            etaMin: 12 + Math.floor(Math.random() * 8),
+            distanceKm: +distanceKm.toFixed(1),
+            etaMin: etaMinutesFromDistance(distanceKm),
             updatedAt: Date.now(),
           }];
         }
@@ -240,16 +245,19 @@ export const useGigStore = create<GigStore>((set, get) => ({
         const gig = s.gigs.find((g) => g.id === gigId);
         if (!gig) { positions[gigId] = s.positions[gigId]; continue; }
         positions[gigId] = s.positions[gigId].map((p) => {
-          const dLat = gig.lat - p.lat;
-          const dLng = gig.lng - p.lng;
-          const dist = Math.sqrt(dLat * dLat + dLng * dLng);
-          if (dist < 0.0008) return { ...p, etaMin: 0, updatedAt: Date.now() };
-          const step = 0.04; // 4% closer per tick
+          const remainingKm = haversineKm({ lat: p.lat, lng: p.lng }, { lat: gig.lat, lng: gig.lng });
+          if (remainingKm < 0.05) {
+            return { ...p, lat: gig.lat, lng: gig.lng, distanceKm: 0, etaMin: 0, updatedAt: Date.now() };
+          }
+
+          const stepKm = (TRAVEL_SPEED_KMPH * POSITION_TICK_SECONDS) / 3600;
+          const ratio = Math.min(1, stepKm / remainingKm);
           return {
             ...p,
-            lat: p.lat + dLat * step,
-            lng: p.lng + dLng * step,
-            etaMin: Math.max(0, Math.round(p.etaMin * (1 - step))),
+            lat: p.lat + (gig.lat - p.lat) * ratio,
+            lng: p.lng + (gig.lng - p.lng) * ratio,
+            distanceKm: +Math.max(0, remainingKm - stepKm).toFixed(1),
+            etaMin: etaMinutesFromDistance(Math.max(0, remainingKm - stepKm)),
             updatedAt: Date.now(),
           };
         });
@@ -273,3 +281,15 @@ export const datesBetween = (startISO: string, endISO: string): string[] => {
   }
   return out;
 };
+
+const haversineKm = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
+  const R = 6371;
+  const dLat = ((b.lat - a.lat) * Math.PI) / 180;
+  const dLng = ((b.lng - a.lng) * Math.PI) / 180;
+  const x = Math.sin(dLat / 2) ** 2
+    + Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(x));
+};
+
+const etaMinutesFromDistance = (distanceKm: number) =>
+  distanceKm <= 0 ? 0 : Math.max(1, Math.round((distanceKm / TRAVEL_SPEED_KMPH) * 60));

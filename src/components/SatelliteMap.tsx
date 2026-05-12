@@ -1,4 +1,4 @@
-import { MapContainer, TileLayer, Marker, Popup, CircleMarker } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, CircleMarker, Polyline } from "react-leaflet";
 import L from "leaflet";
 import { useEffect } from "react";
 import { useMap } from "react-leaflet";
@@ -43,9 +43,24 @@ interface Props {
   onSelect?: (g: Gig) => void;
   height?: string;
   zoom?: number;
+  showWorkerPulse?: boolean;
+  workerMarkers?: { id: string; name: string; lat: number; lng: number; etaMin: number; distanceKm: number }[];
+  destination?: { lat: number; lng: number; label?: string };
+  routeLines?: [number, number][][];
 }
 
-const SatelliteMap = ({ gigs, workerLocation, acceptedGigIds, onSelect, height = "100%", zoom = 12 }: Props) => {
+const SatelliteMap = ({
+  gigs,
+  workerLocation,
+  acceptedGigIds,
+  onSelect,
+  height = "100%",
+  zoom = 12,
+  showWorkerPulse = true,
+  workerMarkers = [],
+  destination,
+  routeLines = [],
+}: Props) => {
   return (
     <div style={{ height, width: "100%" }} className="overflow-hidden rounded-2xl">
       <MapContainer
@@ -56,25 +71,60 @@ const SatelliteMap = ({ gigs, workerLocation, acceptedGigIds, onSelect, height =
         style={{ height: "100%", width: "100%" }}
       >
         <TileLayer
-          attribution='&copy; OpenStreetMap &copy; CARTO'
-          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+          attribution="Tiles &copy; Esri, OSM contributors"
+          url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}"
           maxZoom={19}
         />
         <FlyTo lat={workerLocation.lat} lng={workerLocation.lng} zoom={zoom} />
 
-        {/* Worker pulse */}
-        <CircleMarker
-          center={[workerLocation.lat, workerLocation.lng]}
-          radius={10}
-          pathOptions={{ color: "hsl(180 95% 55%)", fillColor: "hsl(180 95% 55%)", fillOpacity: 0.9, weight: 3 }}
-        >
-          <Popup>You are here</Popup>
-        </CircleMarker>
-        <CircleMarker
-          center={[workerLocation.lat, workerLocation.lng]}
-          radius={28}
-          pathOptions={{ color: "hsl(180 95% 55%)", fillColor: "hsl(180 95% 55%)", fillOpacity: 0.15, weight: 1 }}
-        />
+        {showWorkerPulse && (
+          <>
+            <CircleMarker
+              center={[workerLocation.lat, workerLocation.lng]}
+              radius={10}
+              pathOptions={{ color: "hsl(180 95% 55%)", fillColor: "hsl(180 95% 55%)", fillOpacity: 0.9, weight: 3 }}
+            >
+              <Popup>You are here</Popup>
+            </CircleMarker>
+            <CircleMarker
+              center={[workerLocation.lat, workerLocation.lng]}
+              radius={28}
+              pathOptions={{ color: "hsl(180 95% 55%)", fillColor: "hsl(180 95% 55%)", fillOpacity: 0.15, weight: 1 }}
+            />
+          </>
+        )}
+
+        {workerMarkers.map((w) => (
+          <CircleMarker
+            key={w.id}
+            center={[w.lat, w.lng]}
+            radius={8}
+            pathOptions={{ color: "hsl(84 90% 58%)", fillColor: "hsl(84 90% 58%)", fillOpacity: 0.9, weight: 2 }}
+          >
+            <Popup>
+              <div className="text-xs font-semibold">{w.name}</div>
+              <div className="text-[11px] text-muted-foreground">{w.etaMin === 0 ? "Arrived" : `${w.etaMin} min · ${w.distanceKm} km`}</div>
+            </Popup>
+          </CircleMarker>
+        ))}
+
+        {routeLines.map((points, idx) => (
+          <Polyline
+            key={`route-${idx}`}
+            positions={points}
+            pathOptions={{ color: "#2d7dff", weight: 5, opacity: 0.9 }}
+          />
+        ))}
+
+        {destination && (
+          <CircleMarker
+            center={[destination.lat, destination.lng]}
+            radius={10}
+            pathOptions={{ color: "hsl(0 80% 55%)", fillColor: "hsl(0 80% 55%)", fillOpacity: 1, weight: 3 }}
+          >
+            <Popup>{destination.label ?? "Destination"}</Popup>
+          </CircleMarker>
+        )}
 
         {gigs.map((g) => (
           <Marker

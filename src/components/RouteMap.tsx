@@ -1,6 +1,7 @@
 import { MapContainer, TileLayer, Marker, CircleMarker, Polyline, useMap } from "react-leaflet";
 import L from "leaflet";
 import { useEffect, useRef, useState } from "react";
+import { fetchDrivingRoute } from "@/lib/routing";
 
 interface Props {
   from: { lat: number; lng: number };
@@ -36,22 +37,19 @@ const RouteMap = ({ from, to, height = "100%", destLabel }: Props) => {
 
   useEffect(() => {
     let cancelled = false;
-    const url = `https://router.project-osrm.org/route/v1/driving/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson`;
-    fetch(url).then((r) => r.json()).then((data) => {
-      if (cancelled || !data.routes?.[0]) return;
-      const r0 = data.routes[0];
-      const coords: [number, number][] = r0.geometry.coordinates.map((c: number[]) => [c[1], c[0]]);
-      setRoute(coords);
-      setDistKm(+(r0.distance / 1000).toFixed(1));
-      setEtaMin(Math.max(1, Math.round(r0.duration / 60)));
-      totalDurRef.current = r0.duration;
+    fetchDrivingRoute(from, to).then((summary) => {
+      if (cancelled) return;
+      setRoute(summary.points);
+      setDistKm(summary.distanceKm);
+      setEtaMin(summary.durationMin);
+      totalDurRef.current = summary.durationMin * 60;
       startRef.current = Date.now();
     }).catch(() => {
-      // Fallback: straight line
+      // Fallback: straight line if all providers fail.
       setRoute([[from.lat, from.lng], [to.lat, to.lng]]);
       const dKm = haversine(from, to);
       setDistKm(+dKm.toFixed(1));
-      setEtaMin(Math.max(1, Math.round((dKm / 25) * 60))); // 25 km/h
+      setEtaMin(Math.max(1, Math.round((dKm / 25) * 60)));
     });
     return () => { cancelled = true; };
   }, [from.lat, from.lng, to.lat, to.lng]);
@@ -88,8 +86,8 @@ const RouteMap = ({ from, to, height = "100%", destLabel }: Props) => {
         style={{ height: "100%", width: "100%" }}
       >
         <TileLayer
-          attribution="&copy; OpenStreetMap &copy; CARTO"
-          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+          attribution="Tiles &copy; Esri, OSM contributors"
+          url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}"
           maxZoom={19}
         />
         <Fit a={[from.lat, from.lng]} b={[to.lat, to.lng]} />

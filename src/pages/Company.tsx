@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import SatelliteMap from "@/components/SatelliteMap";
 import { ArrowLeft, Building2, CheckCircle2, Clock, IndianRupee, MapPin, Plus, Radio, ShieldCheck, Users, Wallet } from "lucide-react";
 import { toast } from "sonner";
+import { fetchDrivingRoute } from "@/lib/routing";
 
 const taskOptions: { value: TaskType; label: string }[] = [
   { value: "loading", label: "Loading" },
@@ -83,6 +84,7 @@ const Company = () => {
             const pct = Math.round((g.workersAccepted / g.workersNeeded) * 100);
             const livePositions = positions[g.id] ?? [];
             const closestEta = livePositions.length ? Math.min(...livePositions.map((p) => p.etaMin)) : null;
+            const closestDistance = livePositions.length ? Math.min(...livePositions.map((p) => p.distanceKm)) : null;
             return (
               <Card key={g.id} className="overflow-hidden p-5 transition-base hover:shadow-elevated">
                 <div className="flex items-start justify-between gap-3">
@@ -120,7 +122,7 @@ const Company = () => {
                       </span>
                       <span className="text-xs font-semibold text-foreground">{livePositions.length} worker{livePositions.length !== 1 ? "s" : ""} en route</span>
                     </div>
-                    <span className="text-xs font-bold text-primary">{closestEta} min ETA →</span>
+                    <span className="text-xs font-bold text-primary">{closestEta} min · {closestDistance?.toFixed(1)} km →</span>
                   </button>
                 )}
 
@@ -157,6 +159,32 @@ const Company = () => {
 
 const TrackingDialog = ({ gig, onClose }: { gig: Gig; onClose: () => void }) => {
   const positions = useGigStore((s) => s.positions[gig.id] ?? []);
+  const [routeLines, setRouteLines] = useState<[number, number][][]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (positions.length === 0) {
+      setRouteLines([]);
+      return;
+    }
+
+    const loadRoutes = async () => {
+      const routes = await Promise.all(positions.map(async (p) => {
+        try {
+          const summary = await fetchDrivingRoute({ lat: p.lat, lng: p.lng }, { lat: gig.lat, lng: gig.lng });
+          return summary.points;
+        } catch {
+          return [[p.lat, p.lng], [gig.lat, gig.lng]] as [number, number][];
+        }
+      }));
+      if (!cancelled) setRouteLines(routes);
+    };
+
+    void loadRoutes();
+    return () => { cancelled = true; };
+  }, [positions, gig.lat, gig.lng]);
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 p-0 sm:items-center sm:p-4" onClick={onClose}>
       <div className="w-full max-w-3xl animate-fade-up rounded-t-2xl bg-card p-6 shadow-elevated sm:rounded-2xl max-h-[92vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
@@ -171,9 +199,20 @@ const TrackingDialog = ({ gig, onClose }: { gig: Gig; onClose: () => void }) => 
         <div className="mt-5 h-80 overflow-hidden rounded-2xl border border-border">
           <SatelliteMap
             gigs={[gig]}
-            workerLocation={{ lat: gig.lat, lng: gig.lng }}
+            workerLocation={positions[0] ? { lat: positions[0].lat, lng: positions[0].lng } : { lat: gig.lat, lng: gig.lng }}
             acceptedGigIds={[gig.id]}
             zoom={13}
+            showWorkerPulse={false}
+            workerMarkers={positions.map((p) => ({
+              id: p.workerId,
+              name: p.workerName,
+              lat: p.lat,
+              lng: p.lng,
+              etaMin: p.etaMin,
+              distanceKm: p.distanceKm,
+            }))}
+            destination={{ lat: gig.lat, lng: gig.lng, label: gig.location }}
+            routeLines={routeLines}
           />
         </div>
 
@@ -193,7 +232,7 @@ const TrackingDialog = ({ gig, onClose }: { gig: Gig; onClose: () => void }) => 
               </div>
               <div className="text-right">
                 <div className="font-display text-lg font-extrabold text-primary">{p.etaMin === 0 ? "Arrived" : `${p.etaMin} min`}</div>
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">live ETA</div>
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{p.distanceKm.toFixed(1)} km away</div>
               </div>
             </div>
           ))}
