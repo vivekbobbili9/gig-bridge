@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, HardHat, Phone, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
+import { useGigStore } from "@/store/gigStore";
 
 const WorkerLogin = () => {
   const nav = useNavigate();
+  const setWorkerPhone = useGigStore((s) => s.setWorkerPhone);
   const [step, setStep] = useState<"phone" | "otp">("phone");
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
@@ -83,6 +85,7 @@ const WorkerLogin = () => {
                   className="w-full bg-primary text-primary-foreground shadow-glow hover:bg-primary/90"
                   onClick={() => {
                     if (otp.length !== 4) return toast.error("Enter 4-digit OTP");
+                    setWorkerPhone(phone);
                     toast.success("Welcome aboard!");
                     nav("/worker");
                   }}

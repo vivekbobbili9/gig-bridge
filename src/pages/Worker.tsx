@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import SatelliteMap from "@/components/SatelliteMap";
 import RouteMap from "@/components/RouteMap";
-import { ArrowLeft, Bell, Calendar, CheckCircle2, Clock, Globe, IndianRupee, MapPin, MessageSquare, Navigation, Package, ShieldCheck, ShieldAlert, Star, Truck, User, Wallet, X } from "lucide-react";
+import { ArrowLeft, Bell, Calendar, CheckCircle2, Clock, Globe, IndianRupee, Lock, MapPin, MessageSquare, Navigation, Package, Phone, ShieldCheck, ShieldAlert, Star, Truck, User, Wallet, X } from "lucide-react";
+import { calcPenalty, phoneTel } from "@/store/gigStore";
 import { toast } from "sonner";
 import { LANGS, type Lang, getStoredLang, setStoredLang, makeT, tr } from "@/i18n/worker";
 
@@ -25,17 +26,23 @@ const Worker = () => {
   const changeLang = (l: Lang) => { setLang(l); setStoredLang(l); setLangOpen(false); };
 
   const acceptedGigIds = accepted.map((a) => a.gigId);
+  const activeAcceptance = accepted[0];
+  const activeGig = activeAcceptance ? gigs.find((g) => g.id === activeAcceptance.gigId) : null;
+  const hasActiveGig = Boolean(activeGig);
   const pendingPenalty = penalties.find((p) => !p.applied);
 
   const visibleGigs = useMemo(() => {
     if (!workerOnline) return [];
-    const list = gigs.filter((g) => g.status === "open");
+    let list = gigs.filter((g) => g.status === "open" || acceptedGigIds.includes(g.id));
+    if (hasActiveGig && activeGig) list = list.filter((g) => g.id === activeGig.id);
     return [...list].sort((a, b) => {
       if (sortKey === "pay") return b.payPerWorker - a.payPerWorker;
       if (sortKey === "distance") return a.distanceKm - b.distanceKm;
       return (a.loadingHours + a.unloadingHours) - (b.loadingHours + b.unloadingHours);
     });
-  }, [gigs, workerOnline, sortKey]);
+  }, [gigs, workerOnline, sortKey, hasActiveGig, activeGig, acceptedGigIds]);
+
+  const mapGigs = hasActiveGig && activeGig ? [activeGig] : visibleGigs;
 
   const earnings = useMemo(() => accepted.reduce((sum, a) => {
     const g = gigs.find((x) => x.id === a.gigId);
@@ -63,7 +70,15 @@ const Worker = () => {
       toast.error(t("kyc_block"));
       return;
     }
-    acceptGig(g.id, dates);
+    if (hasActiveGig && g.id !== activeGig?.id) {
+      toast.error(t("one_gig_only"));
+      return;
+    }
+    const ok = acceptGig(g.id, dates);
+    if (!ok) {
+      toast.error(t("one_gig_only"));
+      return;
+    }
     toast.success(t("accepted_toast", { n: dates.length, s: dates.length > 1 ? "s" : "" }));
     if (pendingPenalty) {
       toast.info(t("penalty_note", { p: pendingPenalty.amount, c: tr(pendingPenalty.owedToCompany, lang) }));
@@ -77,9 +92,9 @@ const Worker = () => {
         <div className="flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-3">
             <Button asChild variant="ghost" size="icon"><Link to="/"><ArrowLeft className="h-5 w-5" /></Link></Button>
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-primary shadow-glow">
+            <Link to="/worker/profile" className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-primary shadow-glow transition-base hover:ring-2 hover:ring-primary/50">
               <User className="h-5 w-5 text-primary-foreground" />
-            </div>
+            </Link>
             <div>
               <div className="font-display text-sm font-bold leading-tight">{t("hi_name")}</div>
               <div className="text-xs text-muted-foreground">{t("rating")}</div>
@@ -127,8 +142,13 @@ const Worker = () => {
       </section>
 
       <section className="mt-5 px-4">
+        {hasActiveGig && activeGig && (
+          <p className="mb-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-xs font-semibold text-primary">
+            {t("active_gig_map")}
+          </p>
+        )}
         <div className="relative h-72 overflow-hidden rounded-2xl border border-border shadow-elevated">
-          <SatelliteMap gigs={visibleGigs} workerLocation={workerLocation} acceptedGigIds={acceptedGigIds} onSelect={(g) => setSelected(g)} zoom={11} />
+          <SatelliteMap gigs={mapGigs} workerLocation={workerLocation} acceptedGigIds={acceptedGigIds} onSelect={(g) => setSelected(g)} zoom={hasActiveGig ? 13 : 11} />
           {!workerOnline && (
             <div className="absolute inset-0 z-[400] flex items-center justify-center bg-background/85 backdrop-blur-sm">
               <div className="text-center">
@@ -138,6 +158,11 @@ const Worker = () => {
             </div>
           )}
         </div>
+        {hasActiveGig && activeGig && workerOnline && (
+          <div className="mt-3 h-56 overflow-hidden rounded-2xl border border-primary/30 shadow-elevated">
+            <RouteMap from={workerLocation} to={{ lat: activeGig.lat, lng: activeGig.lng }} destLabel={tr(activeGig.location, lang)} />
+          </div>
+        )}
       </section>
 
       <section className="mt-6 px-4 pb-24">
@@ -176,6 +201,12 @@ const Worker = () => {
             </button>
           ))}
         </div>
+
+        {hasActiveGig && (
+          <p className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Lock className="h-3 w-3" /> {t("one_gig_only")}
+          </p>
+        )}
 
         <div className="mt-3 space-y-3">
           {visibleGigs.map((g) => {
@@ -218,6 +249,7 @@ const Worker = () => {
           gig={selected}
           lang={lang}
           existingDates={accepted.find((a) => a.gigId === selected.id)?.dates ?? []}
+          hasActiveOther={hasActiveGig && selected.id !== activeGig?.id}
           onClose={() => setSelected(null)}
           onAccept={(dates) => handleAccept(selected, dates)}
           onCancelGig={() => setConfirmCancel(selected)}
@@ -228,7 +260,7 @@ const Worker = () => {
       )}
 
       {confirmCancel && (
-        <CancelDialog gig={confirmCancel} lang={lang} t={t} onClose={() => setConfirmCancel(null)} onConfirm={() => {
+        <CancelDialog gig={confirmCancel} remainingDays={accepted.find((a) => a.gigId === confirmCancel.id)?.dates.length ?? 1} lang={lang} t={t} onClose={() => setConfirmCancel(null)} onConfirm={() => {
           cancelGig(confirmCancel.id);
           toast.success(t("cancel_gig"));
           setConfirmCancel(null);
@@ -287,10 +319,10 @@ const Pill = ({ icon: Icon, children, tone = "muted" }: { icon: any; children: R
   return <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 font-semibold ${tones[tone]}`}><Icon className="h-3 w-3" /> {children}</span>;
 };
 
-const GigSheet = ({ gig, lang, existingDates, onClose, onAccept, onCancelGig, onChatGig, workerLocation, t }: { gig: Gig; lang: Lang; existingDates: string[]; onClose: () => void; onAccept: (dates: string[]) => void; onCancelGig: () => void; onChatGig: () => void; workerLocation: { lat: number; lng: number }; t: ReturnType<typeof makeT> }) => {
+const GigSheet = ({ gig, lang, existingDates, hasActiveOther, onClose, onAccept, onCancelGig, onChatGig, workerLocation, t }: { gig: Gig; lang: Lang; existingDates: string[]; hasActiveOther?: boolean; onClose: () => void; onAccept: (dates: string[]) => void; onCancelGig: () => void; onChatGig: () => void; workerLocation: { lat: number; lng: number }; t: ReturnType<typeof makeT> }) => {
   const allDates = datesBetween(gig.startDate, gig.endDate);
   const [picked, setPicked] = useState<string[]>(existingDates.length ? existingDates : allDates);
-  const [showRoute, setShowRoute] = useState(false);
+  const [showRoute, setShowRoute] = useState(existingDates.length > 0);
   const isAlreadyAccepted = existingDates.length > 0;
 
   const toggle = (d: string) => setPicked((p) => (p.includes(d) ? p.filter((x) => x !== d) : [...p, d].sort()));
@@ -316,18 +348,27 @@ const GigSheet = ({ gig, lang, existingDates, onClose, onAccept, onCancelGig, on
           </div>
         </div>
 
-        {/* Directions toggle */}
-        <button onClick={() => setShowRoute((v) => !v)} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-primary/40 bg-primary/10 py-2.5 text-sm font-bold text-primary transition-base hover:bg-primary/20">
-          <Navigation className="h-4 w-4" /> {showRoute ? "Hide route" : t("directions")}
-        </button>
+        <a
+          href={`tel:${phoneTel(gig.companyPhone)}`}
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-accent/40 bg-accent/10 py-2.5 text-sm font-bold text-accent transition-base hover:bg-accent/20"
+        >
+          <Phone className="h-4 w-4" /> {t("call_company")}
+        </a>
         <button onClick={onChatGig} className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-muted/30 py-2.5 text-sm font-bold transition-base hover:border-primary hover:text-primary">
           <MessageSquare className="h-4 w-4" /> Message business
         </button>
 
-        {showRoute && (
-          <div className="mt-3 h-64 overflow-hidden rounded-2xl border border-border">
-            <RouteMap from={workerLocation} to={{ lat: gig.lat, lng: gig.lng }} destLabel={tr(gig.location, lang)} />
-          </div>
+        {isAlreadyAccepted && (
+          <>
+            <button onClick={() => setShowRoute((v) => !v)} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-primary/40 bg-primary/10 py-2.5 text-sm font-bold text-primary transition-base hover:bg-primary/20">
+              <Navigation className="h-4 w-4" /> {showRoute ? t("hide_route") : t("directions")}
+            </button>
+            {showRoute && (
+              <div className="mt-3 h-64 overflow-hidden rounded-2xl border border-border">
+                <RouteMap from={workerLocation} to={{ lat: gig.lat, lng: gig.lng }} destLabel={tr(gig.location, lang)} />
+              </div>
+            )}
+          </>
         )}
 
         <div className="mt-5 grid grid-cols-4 gap-2">
@@ -379,8 +420,12 @@ const GigSheet = ({ gig, lang, existingDates, onClose, onAccept, onCancelGig, on
           ) : (
             <Button variant="ghost" onClick={onClose}>{t("skip")}</Button>
           )}
-          <Button disabled={picked.length === 0} onClick={() => onAccept(picked)} className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
-            {t("accept_n_days", { n: picked.length, s: picked.length !== 1 ? "s" : "" })}
+          <Button
+            disabled={picked.length === 0 || (hasActiveOther && !isAlreadyAccepted)}
+            onClick={() => onAccept(picked)}
+            className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          >
+            {hasActiveOther && !isAlreadyAccepted ? t("one_gig_only") : t("accept_n_days", { n: picked.length, s: picked.length !== 1 ? "s" : "" })}
           </Button>
         </div>
       </div>
@@ -388,8 +433,8 @@ const GigSheet = ({ gig, lang, existingDates, onClose, onAccept, onCancelGig, on
   );
 };
 
-const CancelDialog = ({ gig, lang, t, onClose, onConfirm }: { gig: Gig; lang: Lang; t: ReturnType<typeof makeT>; onClose: () => void; onConfirm: () => void }) => {
-  const penalty = Math.round(gig.payPerWorker * 0.1);
+const CancelDialog = ({ gig, remainingDays, lang, t, onClose, onConfirm }: { gig: Gig; remainingDays: number; lang: Lang; t: ReturnType<typeof makeT>; onClose: () => void; onConfirm: () => void }) => {
+  const { total, workerShare, companyShare } = calcPenalty(gig.payPerWorker, remainingDays);
   return (
     <div className="fixed inset-0 z-[700] flex items-center justify-center bg-background/80 p-4 backdrop-blur" onClick={onClose}>
       <div className="w-full max-w-sm animate-fade-up rounded-2xl border border-destructive/40 bg-card p-6 shadow-elevated" onClick={(e) => e.stopPropagation()}>
@@ -397,7 +442,11 @@ const CancelDialog = ({ gig, lang, t, onClose, onConfirm }: { gig: Gig; lang: La
           <ShieldAlert className="h-5 w-5" />
           <h3 className="font-display text-lg font-bold">{t("cancel_gig")}</h3>
         </div>
-        <p className="text-sm text-muted-foreground">{t("cancel_warn", { p: penalty, c: tr(gig.companyName, lang) })}</p>
+        <p className="text-sm text-muted-foreground">{t("cancel_warn_pct", { p: total, c: tr(gig.companyName, lang) })}</p>
+        <div className="mt-3 rounded-xl bg-muted/50 p-3 text-xs text-muted-foreground">
+          <div>{t("penalty_split_worker", { p: workerShare })}</div>
+          <div className="mt-1">{t("penalty_split_company", { p: companyShare, c: tr(gig.companyName, lang) })}</div>
+        </div>
         <div className="mt-5 flex gap-3">
           <Button variant="ghost" onClick={onClose} className="flex-1">{t("keep")}</Button>
           <Button onClick={onConfirm} className="flex-1 bg-destructive text-destructive-foreground hover:bg-destructive/90">{t("cancel_confirm")}</Button>

@@ -10,6 +10,7 @@ import Worker from "./pages/Worker.tsx";
 import CompanyLogin from "./pages/CompanyLogin.tsx";
 import WorkerLogin from "./pages/WorkerLogin.tsx";
 import WorkerKyc from "./pages/WorkerKyc.tsx";
+import WorkerProfile from "./pages/WorkerProfile.tsx";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +27,7 @@ const App = () => (
           <Route path="/company" element={<Company />} />
           <Route path="/worker" element={<Worker />} />
           <Route path="/worker/kyc" element={<WorkerKyc />} />
+          <Route path="/worker/profile" element={<WorkerProfile />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

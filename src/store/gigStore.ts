@@ -8,6 +8,7 @@ export type NoticeType = "accepted" | "on_the_way" | "worker_cancelled" | "compa
 export interface Gig {
   id: string;
   companyName: string;
+  companyPhone: string;
   companyLogo?: string;
   title: string;
   taskType: TaskType;
@@ -28,6 +29,7 @@ export interface Gig {
   status: GigStatus;
   createdAt: number;
   reclaimedFromPenalty?: number;
+  bonusForNextWorker?: number;
 }
 
 export interface AcceptedGig {
@@ -49,6 +51,8 @@ export interface Penalty {
   id: string;
   workerId: string;
   amount: number;
+  workerShare: number;
+  companyShare: number;
   owedToGigId: string;
   owedToCompany: string;
   createdAt: number;
@@ -91,22 +95,45 @@ export interface PartyRating {
   createdAt: number;
 }
 
+export interface CompanyProfile {
+  name: string;
+  contactName: string;
+  email: string;
+  phone: string;
+  address?: string;
+}
+
+export interface FeedbackItem {
+  id: string;
+  workerId: string;
+  type: "feedback" | "complaint";
+  subject: string;
+  message: string;
+  gigId?: string;
+  companyName?: string;
+  createdAt: number;
+  status: "open" | "resolved";
+}
+
 interface GigStore {
   gigs: Gig[];
+  company: CompanyProfile | null;
   workerOnline: boolean;
   workerLocation: { lat: number; lng: number };
   workerId: string;
   workerName: string;
+  workerPhone: string;
   accepted: AcceptedGig[];
   positions: Record<string, WorkerPosition[]>;
   penalties: Penalty[];
+  feedback: FeedbackItem[];
   kyc: KycData;
   companyNotices: AppNotice[];
   workerNotices: AppNotice[];
   chatsByGig: Record<string, ChatMessage[]>;
   ratings: PartyRating[];
-  addGig: (g: Omit<Gig, "id" | "status" | "createdAt" | "workersAccepted" | "lat" | "lng" | "distanceKm">) => void;
-  acceptGig: (id: string, dates: string[]) => void;
+  addGig: (g: Omit<Gig, "id" | "status" | "createdAt" | "workersAccepted" | "lat" | "lng" | "distanceKm" | "companyPhone">) => void;
+  acceptGig: (id: string, dates: string[]) => boolean;
   cancelGig: (id: string) => void;
   cancelGigByCompany: (id: string) => void;
   completeGig: (id: string) => void;
@@ -117,12 +144,29 @@ interface GigStore {
   toggleOnline: () => void;
   tickPositions: () => void;
   setKyc: (data: Partial<KycData> & { status: KycStatus }) => void;
+  setCompany: (profile: CompanyProfile) => void;
+  setWorkerPhone: (phone: string) => void;
+  submitFeedback: (item: Omit<FeedbackItem, "id" | "workerId" | "createdAt" | "status">) => void;
   payWorkers: (gigId: string) => number;
 }
 
 const CENTER = { lat: 12.9716, lng: 77.5946 };
 const TRAVEL_SPEED_KMPH = 24;
 const POSITION_TICK_SECONDS = 3;
+const DEFAULT_COMPANY_PHONE = "+91 80 4567 8900";
+
+export const PENALTY_TOTAL_PCT = 0.05;
+export const PENALTY_WORKER_PCT = 0.03;
+export const PENALTY_COMPANY_PCT = 0.02;
+
+export const calcPenalty = (payPerWorker: number, remainingDays: number) => {
+  const base = payPerWorker * remainingDays;
+  return {
+    total: Math.round(base * PENALTY_TOTAL_PCT),
+    workerShare: Math.round(base * PENALTY_WORKER_PCT),
+    companyShare: Math.round(base * PENALTY_COMPANY_PCT),
+  };
+};
 
 const today = new Date();
 const iso = (d: Date) => d.toISOString().slice(0, 10);
@@ -130,7 +174,7 @@ const addDays = (d: Date, n: number) => { const x = new Date(d); x.setDate(x.get
 
 const seed: Gig[] = [
   {
-    id: "g-1001", companyName: "BlueCart Logistics",
+    id: "g-1001", companyName: "BlueCart Logistics", companyPhone: "+91 80 4567 8901",
     title: "Container unloading — 40ft FCL", taskType: "unloading",
     loadingHours: 0, unloadingHours: 4, workersNeeded: 8, workersAccepted: 3, payPerWorker: 950,
     location: "Whitefield ICD, Bengaluru", lat: 12.9698, lng: 77.7500, distanceKm: 2.4,
@@ -140,7 +184,7 @@ const seed: Gig[] = [
     status: "open", createdAt: Date.now() - 1000 * 60 * 22,
   },
   {
-    id: "g-1002", companyName: "FreshKart Hub",
+    id: "g-1002", companyName: "FreshKart Hub", companyPhone: "+91 80 4567 8902",
     title: "Cold-storage loading — vegetable crates", taskType: "loading",
     loadingHours: 3, unloadingHours: 0, workersNeeded: 6, workersAccepted: 1, payPerWorker: 720,
     location: "Yeshwanthpur Mandi", lat: 13.0280, lng: 77.5540, distanceKm: 5.1,
@@ -150,7 +194,7 @@ const seed: Gig[] = [
     status: "open", createdAt: Date.now() - 1000 * 60 * 60,
   },
   {
-    id: "g-1003", companyName: "Urban Movers Co.",
+    id: "g-1003", companyName: "Urban Movers Co.", companyPhone: "+91 80 4567 8903",
     title: "House shifting — 3BHK pickup & delivery", taskType: "mixed",
     loadingHours: 2, unloadingHours: 2, workersNeeded: 4, workersAccepted: 0, payPerWorker: 1100,
     location: "HSR Layout → Indiranagar", lat: 12.9120, lng: 77.6446, distanceKm: 3.8,
@@ -159,7 +203,7 @@ const seed: Gig[] = [
     status: "open", createdAt: Date.now() - 1000 * 60 * 8,
   },
   {
-    id: "g-1004", companyName: "QuickShip Warehouse",
+    id: "g-1004", companyName: "QuickShip Warehouse", companyPhone: "+91 80 4567 8904",
     title: "Bulk pickup — e-commerce returns", taskType: "pickup",
     loadingHours: 1.5, unloadingHours: 0.5, workersNeeded: 12, workersAccepted: 7, payPerWorker: 600,
     location: "Bommasandra Industrial Area", lat: 12.8120, lng: 77.6980, distanceKm: 8.6,
@@ -169,7 +213,6 @@ const seed: Gig[] = [
   },
 ];
 
-// Seed a few mock workers around Bengaluru for company live tracking
 const seedPositions: Record<string, WorkerPosition[]> = {
   "g-1001": [
     { workerId: "w-r1", workerName: "Ramesh K.", lat: 12.9750, lng: 77.7100, etaMin: 14, distanceKm: 5.4, updatedAt: Date.now() },
@@ -183,13 +226,16 @@ const seedPositions: Record<string, WorkerPosition[]> = {
 
 export const useGigStore = create<GigStore>((set, get) => ({
   gigs: seed,
+  company: null,
   workerOnline: true,
   workerLocation: CENTER,
   workerId: "w-me",
   workerName: "Ramesh",
+  workerPhone: "",
   accepted: [],
   positions: seedPositions,
   penalties: [],
+  feedback: [],
   kyc: { status: "none" },
   companyNotices: [],
   workerNotices: [],
@@ -197,8 +243,12 @@ export const useGigStore = create<GigStore>((set, get) => ({
   ratings: [],
   addGig: (g) =>
     set((s) => {
+      const phone = s.company?.phone ?? DEFAULT_COMPANY_PHONE;
+      const companyName = s.company?.name ?? g.companyName;
       const newGig: Gig = {
         ...g,
+        companyName,
+        companyPhone: phone,
         id: `g-${Math.floor(1000 + Math.random() * 9000)}`,
         status: "open",
         workersAccepted: 0,
@@ -209,64 +259,80 @@ export const useGigStore = create<GigStore>((set, get) => ({
       };
       return { gigs: [newGig, ...s.gigs] };
     }),
-  acceptGig: (id, dates) =>
-    set((s) => {
-      const exists = s.accepted.find((a) => a.gigId === id);
-      const accepted = exists
-        ? s.accepted.map((a) => (a.gigId === id ? { ...a, dates } : a))
-        : [...s.accepted, { gigId: id, dates }];
+  acceptGig: (id, dates) => {
+    const s = get();
+    const hasOther = s.accepted.some((a) => a.gigId !== id);
+    if (hasOther) return false;
 
-      // Apply pending penalty: deduct from this gig's pay & credit owed company
-      const pending = s.penalties.find((p) => !p.applied && p.workerId === s.workerId);
-      let penalties = s.penalties;
-      let gigs = s.gigs;
+    set((state) => {
+      const exists = state.accepted.find((a) => a.gigId === id);
+      const accepted = exists
+        ? state.accepted.map((a) => (a.gigId === id ? { ...a, dates } : a))
+        : [...state.accepted, { gigId: id, dates }];
+
+      const pending = state.penalties.find((p) => !p.applied && p.workerId === state.workerId);
+      let penalties = state.penalties;
+      let gigs = state.gigs;
       if (pending && !exists) {
-        penalties = s.penalties.map((p) => p.id === pending.id ? { ...p, applied: true } : p);
-        gigs = s.gigs.map((g) => g.id === pending.owedToGigId
-          ? { ...g, reclaimedFromPenalty: (g.reclaimedFromPenalty ?? 0) + pending.amount }
-          : g);
+        penalties = state.penalties.map((p) => p.id === pending.id ? { ...p, applied: true } : p);
+        gigs = state.gigs.map((g) => {
+          if (g.id === pending.owedToGigId) {
+            return {
+              ...g,
+              reclaimedFromPenalty: (g.reclaimedFromPenalty ?? 0) + pending.companyShare,
+              bonusForNextWorker: (g.bonusForNextWorker ?? 0) + pending.workerShare,
+            };
+          }
+          if (g.id === id) {
+            return { ...g, bonusForNextWorker: (g.bonusForNextWorker ?? 0) + pending.workerShare };
+          }
+          return g;
+        });
       }
 
-      // Seed worker position for live tracking
-      const myGig = s.gigs.find((g) => g.id === id);
-      const positions = { ...s.positions };
-      const companyNotices = [...s.companyNotices];
+      const myGig = state.gigs.find((g) => g.id === id);
+      const positions = { ...state.positions };
+      const companyNotices = [...state.companyNotices];
       if (myGig && !exists) {
         const list = positions[id] ?? [];
-        if (!list.find((p) => p.workerId === s.workerId)) {
-          // Start ~3-6km away from gig
+        if (!list.find((p) => p.workerId === state.workerId)) {
           const startLat = myGig.lat + (Math.random() - 0.5) * 0.05;
           const startLng = myGig.lng + (Math.random() - 0.5) * 0.05;
           const distanceKm = haversineKm({ lat: startLat, lng: startLng }, { lat: myGig.lat, lng: myGig.lng });
           positions[id] = [...list, {
-            workerId: s.workerId, workerName: s.workerName,
+            workerId: state.workerId, workerName: state.workerName,
             lat: startLat, lng: startLng,
             distanceKm: +distanceKm.toFixed(1),
             etaMin: etaMinutesFromDistance(distanceKm),
             updatedAt: Date.now(),
           }];
-          companyNotices.unshift(makeNotice("on_the_way", myGig, `${s.workerName} is on the way for ${myGig.title}.`));
+          companyNotices.unshift(makeNotice("on_the_way", myGig, `${state.workerName} is on the way for ${myGig.title}.`));
         }
-        companyNotices.unshift(makeNotice("accepted", myGig, `${s.workerName} accepted ${myGig.title} (${dates.length} day${dates.length !== 1 ? "s" : ""}).`));
+        companyNotices.unshift(makeNotice("accepted", myGig, `${state.workerName} accepted ${myGig.title} (${dates.length} day${dates.length !== 1 ? "s" : ""}).`));
       }
 
       return {
         accepted, penalties, gigs: gigs.map((g) =>
-          g.id === id && !exists ? { ...g, workersAccepted: Math.min(g.workersNeeded, g.workersAccepted + 1) } : g
+          g.id === id && !exists ? { ...g, workersAccepted: Math.min(g.workersNeeded, g.workersAccepted + 1), status: "assigned" as GigStatus } : g
         ), positions, companyNotices,
       };
-    }),
+    });
+    return true;
+  },
   cancelGig: (id) =>
     set((s) => {
       const wasAccepted = s.accepted.find((a) => a.gigId === id);
       if (!wasAccepted) return s;
       const gig = s.gigs.find((g) => g.id === id);
       const remainingDays = wasAccepted.dates.length;
-      const penaltyAmt = gig ? Math.round(gig.payPerWorker * remainingDays * 0.1) : 0;
+      const { total, workerShare, companyShare } = gig
+        ? calcPenalty(gig.payPerWorker, remainingDays)
+        : { total: 0, workerShare: 0, companyShare: 0 };
 
-      const penalties = gig && penaltyAmt > 0
+      const penalties = gig && total > 0
         ? [...s.penalties, {
-            id: `p-${Date.now()}`, workerId: s.workerId, amount: penaltyAmt,
+            id: `p-${Date.now()}`, workerId: s.workerId, amount: total,
+            workerShare, companyShare,
             owedToGigId: id, owedToCompany: gig.companyName,
             createdAt: Date.now(), applied: false,
           }]
@@ -280,7 +346,9 @@ export const useGigStore = create<GigStore>((set, get) => ({
 
       return {
         accepted: s.accepted.filter((a) => a.gigId !== id),
-        gigs: s.gigs.map((g) => g.id === id ? { ...g, workersAccepted: Math.max(0, g.workersAccepted - 1) } : g),
+        gigs: s.gigs.map((g) => g.id === id
+          ? { ...g, workersAccepted: Math.max(0, g.workersAccepted - 1), status: "open" as GigStatus, bonusForNextWorker: (g.bonusForNextWorker ?? 0) + workerShare }
+          : g),
         penalties, positions, companyNotices,
       };
     }),
@@ -308,13 +376,16 @@ export const useGigStore = create<GigStore>((set, get) => ({
     set((s) => {
       const gig = s.gigs.find((g) => g.id === id);
       if (!gig || gig.status === "completed" || gig.status === "cancelled") return s;
+      const positions = { ...s.positions };
+      if (positions[id]) positions[id] = positions[id].filter((p) => p.workerId !== s.workerId);
       const workerNotices = s.accepted.some((a) => a.gigId === id)
         ? [makeNotice("company_cancelled", gig, `${gig.title} is marked complete. Please rate the business.`), ...s.workerNotices]
         : s.workerNotices;
       const companyNotices = [makeNotice("accepted", gig, `${gig.title} marked complete. Please rate workers.`), ...s.companyNotices];
       return {
+        accepted: s.accepted.filter((a) => a.gigId !== id),
         gigs: s.gigs.map((g) => g.id === id ? { ...g, status: "completed" } : g),
-        positions: { ...s.positions, [id]: [] },
+        positions: { ...positions, [id]: positions[id]?.filter((p) => p.workerId !== s.workerId) ?? [] },
         workerNotices,
         companyNotices,
       };
@@ -383,6 +454,18 @@ export const useGigStore = create<GigStore>((set, get) => ({
       return { positions };
     }),
   setKyc: (data) => set((s) => ({ kyc: { ...s.kyc, ...data } })),
+  setCompany: (profile) => set({ company: profile }),
+  setWorkerPhone: (phone) => set({ workerPhone: phone }),
+  submitFeedback: (item) =>
+    set((s) => ({
+      feedback: [{
+        ...item,
+        id: `fb-${Date.now()}`,
+        workerId: s.workerId,
+        createdAt: Date.now(),
+        status: "open",
+      }, ...s.feedback],
+    })),
   payWorkers: (gigId) => {
     const s = get();
     const positions = s.positions[gigId] ?? [];
@@ -399,6 +482,8 @@ export const datesBetween = (startISO: string, endISO: string): string[] => {
   }
   return out;
 };
+
+export const phoneTel = (phone: string) => phone.replace(/[^\d+]/g, "");
 
 const haversineKm = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
   const R = 6371;

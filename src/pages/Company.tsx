@@ -21,7 +21,7 @@ const taskOptions: { value: TaskType; label: string }[] = [
 ];
 
 const Company = () => {
-  const { gigs, positions, addGig, tickPositions, payWorkers, cancelGigByCompany, companyNotices, completeGig, chatsByGig, sendCompanyMessage, ratings, submitCompanyRating } = useGigStore();
+  const { gigs, positions, company, addGig, tickPositions, payWorkers, cancelGigByCompany, companyNotices, completeGig, chatsByGig, sendCompanyMessage, ratings, submitCompanyRating } = useGigStore();
   const [open, setOpen] = useState(false);
   const [tracking, setTracking] = useState<Gig | null>(null);
   const [cancelGig, setCancelGig] = useState<Gig | null>(null);
@@ -60,8 +60,10 @@ const Company = () => {
             <Button asChild variant="ghost" size="icon"><Link to="/"><ArrowLeft className="h-5 w-5" /></Link></Button>
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-primary"><Building2 className="h-4 w-4 text-primary-foreground" /></div>
             <div>
-              <div className="font-display text-base font-bold leading-tight">BlueCart Logistics</div>
-              <div className="text-xs text-muted-foreground">Company portal</div>
+              <div className="font-display text-base font-bold leading-tight">{company?.name ?? "BlueCart Logistics"}</div>
+              <div className="text-xs text-muted-foreground">
+                {company?.phone ? `${company.phone} · ` : ""}Company portal
+              </div>
             </div>
           </div>
           <Button onClick={() => setOpen(true)} className="bg-accent text-accent-foreground hover:bg-accent/90">
