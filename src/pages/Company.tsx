@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { useGigStore, type TaskType, type Gig } from "@/store/gigStore";
+import { useGigStore, canMarkGigUrgent, isGigStale, type TaskType, type Gig } from "@/store/gigStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,7 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import SatelliteMap from "@/components/SatelliteMap";
-import { AlertTriangle, ArrowLeft, Building2, CheckCircle2, Clock, IndianRupee, MapPin, MessageSquare, Plus, Radio, ShieldCheck, Star, Users, Wallet, XCircle } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Building2, CheckCircle2, Clock, Flame, IndianRupee, MapPin, MessageSquare, Plus, Radio, ShieldCheck, Star, Users, Wallet, XCircle } from "lucide-react";
+import TutorialOverlay, { type TutorialStep } from "@/components/TutorialOverlay";
+import { isTutorialDone, markTutorialDone } from "@/lib/tutorial";
 import { toast } from "sonner";
 import { fetchDrivingRoute } from "@/lib/routing";
 
@@ -21,13 +23,24 @@ const taskOptions: { value: TaskType; label: string }[] = [
 ];
 
 const Company = () => {
-  const { gigs, positions, company, addGig, tickPositions, payWorkers, cancelGigByCompany, companyNotices, completeGig, chatsByGig, sendCompanyMessage, ratings, submitCompanyRating } = useGigStore();
+  const { gigs, positions, company, addGig, tickPositions, payWorkers, cancelGigByCompany, companyNotices, completeGig, chatsByGig, sendCompanyMessage, ratings, submitCompanyRating, submitCompanyWorkerRating, markGigUrgent } = useGigStore();
+  const companyName = company?.name ?? "BlueCart Logistics";
   const [open, setOpen] = useState(false);
   const [tracking, setTracking] = useState<Gig | null>(null);
   const [cancelGig, setCancelGig] = useState<Gig | null>(null);
   const [chatGig, setChatGig] = useState<Gig | null>(null);
-  const [rateGig, setRateGig] = useState<Gig | null>(null);
+  const [rateGig, setRateGig] = useState<{ gig: Gig; workerId: string; workerName: string } | null>(null);
+  const [urgentGig, setUrgentGig] = useState<Gig | null>(null);
+  const [tutorialStep, setTutorialStep] = useState(0);
+  const [showTutorial, setShowTutorial] = useState(!isTutorialDone("company"));
   const lastNoticeRef = useRef<string | null>(null);
+
+  const companyTutorialSteps: TutorialStep[] = [
+    { title: "Raise a ticket", body: "Tap Raise a ticket to post gigs with pay, location, and dates. Only your company's gigs appear here." },
+    { title: "Track workers live", body: "When workers accept, use Live track to see distance and ETA on the map." },
+    { title: "Mark urgent + tip", body: "If a worker cancels or slots stay empty too long, mark the gig URGENT and add a tip so nearby workers see it first." },
+    { title: "Rate workers", body: "After finishing a gig, rate each worker. Feedback & complaints is in the header menu." },
+  ];
 
   // Live tick worker positions every 3s
   useEffect(() => {
@@ -35,13 +48,16 @@ const Company = () => {
     return () => clearInterval(id);
   }, [tickPositions]);
 
-  const myGigs = useMemo(() => gigs.slice(0, 8), [gigs]);
+  const myGigs = useMemo(
+    () => gigs.filter((g) => g.companyName === companyName).sort((a, b) => b.createdAt - a.createdAt),
+    [gigs, companyName],
+  );
   const totals = useMemo(() => {
-    const active = gigs.filter((g) => g.status !== "completed" && g.status !== "cancelled").length;
-    const filled = gigs.reduce((a, g) => a + g.workersAccepted, 0);
-    const needed = gigs.reduce((a, g) => a + g.workersNeeded, 0);
+    const active = myGigs.filter((g) => g.status !== "completed" && g.status !== "cancelled").length;
+    const filled = myGigs.reduce((a, g) => a + g.workersAccepted, 0);
+    const needed = myGigs.reduce((a, g) => a + g.workersNeeded, 0);
     return { active, filled, needed };
-  }, [gigs]);
+  }, [myGigs]);
   const recentNotices = useMemo(() => companyNotices.slice(0, 4), [companyNotices]);
 
   useEffect(() => {
@@ -66,9 +82,14 @@ const Company = () => {
               </div>
             </div>
           </div>
-          <Button onClick={() => setOpen(true)} className="bg-accent text-accent-foreground hover:bg-accent/90">
-            <Plus className="mr-2 h-4 w-4" /> Raise a ticket
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button asChild variant="outline" size="sm">
+              <Link to="/company/feedback"><MessageSquare className="mr-1.5 h-4 w-4" /> Feedback</Link>
+            </Button>
+            <Button onClick={() => setOpen(true)} className="bg-accent text-accent-foreground hover:bg-accent/90">
+              <Plus className="mr-2 h-4 w-4" /> Raise a ticket
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -116,17 +137,21 @@ const Company = () => {
             const livePositions = positions[g.id] ?? [];
             const closestEta = livePositions.length ? Math.min(...livePositions.map((p) => p.etaMin)) : null;
             const closestDistance = livePositions.length ? Math.min(...livePositions.map((p) => p.distanceKm)) : null;
-            const workerRated = ratings.some((r) => r.gigId === g.id && r.by === "company");
-            const workerRatings = ratings.filter((r) => r.by === "worker" && r.gigId === g.id);
+            const workerRatings = ratings.filter((r) => r.by === "company" && r.gigId === g.id && r.workerId);
             const workerAvg = workerRatings.length ? (workerRatings.reduce((a, r) => a + r.score, 0) / workerRatings.length).toFixed(1) : null;
+            const stale = isGigStale(g);
+            const canUrgent = canMarkGigUrgent(g, companyNotices) && !g.urgent;
             return (
               <Card key={g.id} className="overflow-hidden p-5 transition-base hover:shadow-elevated">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{g.companyName} · #{g.id.slice(-4)}</div>
+                    <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">#{g.id.slice(-4)}{stale ? " · Needs workers" : ""}</div>
                     <div className="mt-1 font-display text-lg font-bold leading-tight">{g.title}</div>
                   </div>
-                  <span className="shrink-0 rounded-full bg-success/10 px-3 py-1 text-xs font-semibold capitalize text-success">{g.status}</span>
+                  <div className="flex flex-col items-end gap-1">
+                    {g.urgent && <span className="rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-bold uppercase text-destructive"><Flame className="mr-0.5 inline h-3 w-3" />Urgent +₹{g.urgentTip ?? 0}</span>}
+                    <span className="shrink-0 rounded-full bg-success/10 px-3 py-1 text-xs font-semibold capitalize text-success">{g.status}</span>
+                  </div>
                 </div>
 
                 <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -189,6 +214,11 @@ const Company = () => {
                       <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" /> Finish
                     </Button>
                   )}
+                  {canUrgent && (
+                    <Button size="sm" variant="outline" className="border-destructive/40 text-destructive hover:bg-destructive/10" onClick={() => setUrgentGig(g)}>
+                      <Flame className="mr-1.5 h-3.5 w-3.5" /> Mark urgent
+                    </Button>
+                  )}
                   {g.status !== "cancelled" && (
                     <Button size="sm" variant="destructive" onClick={() => setCancelGig(g)}>
                       <XCircle className="mr-1.5 h-3.5 w-3.5" /> Cancel
@@ -198,7 +228,7 @@ const Company = () => {
                 {g.status === "completed" && (
                   <div className="mt-3 flex items-center justify-between rounded-lg border border-border bg-muted/40 p-2 text-xs">
                     <span className="inline-flex items-center gap-1"><Star className="h-3.5 w-3.5 text-yellow-400" /> Worker rating {workerAvg ? `${workerAvg}/5` : "pending"}</span>
-                    {!workerRated && <Button size="sm" variant="outline" onClick={() => setRateGig(g)}>Rate now</Button>}
+                    <Button size="sm" variant="outline" onClick={() => setTracking(g)}>Rate workers</Button>
                   </div>
                 )}
               </Card>
@@ -208,7 +238,14 @@ const Company = () => {
       </main>
 
       {open && <NewTicketDialog onClose={() => setOpen(false)} onCreate={(g) => { addGig(g); toast.success("Ticket published — workers are being notified"); setOpen(false); }} />}
-      {tracking && <TrackingDialog gig={tracking} onClose={() => setTracking(null)} />}
+      {tracking && <TrackingDialog
+        gig={tracking}
+        onClose={() => setTracking(null)}
+        onRateWorker={(workerId, workerName) => {
+          setRateGig({ gig: tracking, workerId, workerName });
+          setTracking(null);
+        }}
+      />}
       {chatGig && <ChatDialog
         title={`Chat · ${chatGig.title}`}
         messages={chatsByGig[chatGig.id] ?? []}
@@ -223,20 +260,68 @@ const Company = () => {
         setCancelGig(null);
       }} />}
       {rateGig && <RatingDialog
-        title={`Rate workers · ${rateGig.title}`}
+        title={`Rate ${rateGig.workerName} · ${rateGig.gig.title}`}
         onClose={() => setRateGig(null)}
         onSubmit={(score, complaint) => {
-          submitCompanyRating(rateGig.id, score, complaint);
-          toast.success("Anonymous rating submitted.");
+          submitCompanyWorkerRating(rateGig.gig.id, rateGig.workerId, rateGig.workerName, score, complaint);
+          toast.success(`Rating submitted for ${rateGig.workerName}.`);
           setRateGig(null);
         }}
       />}
+      {urgentGig && <UrgentDialog
+        gig={urgentGig}
+        onClose={() => setUrgentGig(null)}
+        onConfirm={(tip) => {
+          markGigUrgent(urgentGig.id, tip);
+          toast.success(`Gig marked URGENT with ₹${tip} tip per worker`);
+          setUrgentGig(null);
+        }}
+      />}
+      {showTutorial && (
+        <TutorialOverlay
+          steps={companyTutorialSteps}
+          step={tutorialStep}
+          onSkip={() => { markTutorialDone("company"); setShowTutorial(false); }}
+          onNext={() => {
+            if (tutorialStep + 1 >= companyTutorialSteps.length) {
+              markTutorialDone("company");
+              setShowTutorial(false);
+            } else setTutorialStep((s) => s + 1);
+          }}
+        />
+      )}
     </div>
   );
 };
 
-const TrackingDialog = ({ gig, onClose }: { gig: Gig; onClose: () => void }) => {
+const UrgentDialog = ({ gig, onClose, onConfirm }: { gig: Gig; onClose: () => void; onConfirm: (tip: number) => void }) => {
+  const [tip, setTip] = useState(100);
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-foreground/60 p-4" onClick={onClose}>
+      <div className="w-full max-w-md rounded-2xl border border-destructive/40 bg-card p-5 shadow-elevated" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-2 text-destructive">
+          <Flame className="h-5 w-5" />
+          <h3 className="font-display text-lg font-bold">Mark gig as urgent</h3>
+        </div>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Nearby workers will see <span className="font-semibold text-foreground">{gig.title}</span> highlighted first. Add a tip on top of daily pay.
+        </p>
+        <div className="mt-4">
+          <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tip per worker (₹)</Label>
+          <Input type="number" min={0} step={50} value={tip} onChange={(e) => setTip(+e.target.value)} className="mt-1.5" />
+        </div>
+        <div className="mt-5 flex gap-3">
+          <Button variant="ghost" className="flex-1" onClick={onClose}>Cancel</Button>
+          <Button className="flex-1 bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => onConfirm(tip)}>Mark urgent</Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const TrackingDialog = ({ gig, onClose, onRateWorker }: { gig: Gig; onClose: () => void; onRateWorker: (workerId: string, workerName: string) => void }) => {
   const positions = useGigStore((s) => s.positions[gig.id] ?? []);
+  const ratings = useGigStore((s) => s.ratings);
   const [routeLines, setRouteLines] = useState<[number, number][][]>([]);
 
   useEffect(() => {
@@ -311,6 +396,15 @@ const TrackingDialog = ({ gig, onClose }: { gig: Gig; onClose: () => void }) => 
               <div className="text-right">
                 <div className="font-display text-lg font-extrabold text-primary">{p.etaMin === 0 ? "Arrived" : `${p.etaMin} min`}</div>
                 <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{p.distanceKm.toFixed(1)} km away</div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="mt-1"
+                  disabled={ratings.some((r) => r.gigId === gig.id && r.by === "company" && r.workerId === p.workerId)}
+                  onClick={() => onRateWorker(p.workerId, p.workerName)}
+                >
+                  <Star className="mr-1 h-3 w-3" /> Rate worker
+                </Button>
               </div>
             </div>
           ))}
@@ -328,10 +422,11 @@ const Stat = ({ icon: Icon, label, value }: { icon: any; label: string; value: s
 );
 
 const NewTicketDialog = ({ onClose, onCreate }: { onClose: () => void; onCreate: (g: any) => void }) => {
+  const company = useGigStore((s) => s.company);
   const todayISO = new Date().toISOString().slice(0, 10);
   const weekISO = new Date(Date.now() + 6 * 86400000).toISOString().slice(0, 10);
   const [form, setForm] = useState({
-    companyName: "BlueCart Logistics",
+    companyName: company?.name ?? "BlueCart Logistics",
     title: "",
     taskType: "unloading" as TaskType,
     loadingHours: 0, unloadingHours: 2,
@@ -471,3 +566,4 @@ const RatingDialog = ({ title, onSubmit, onClose }: {
 };
 
 export default Company;
+

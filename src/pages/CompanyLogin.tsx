@@ -6,11 +6,19 @@ import { Label } from "@/components/ui/label";
 import { ArrowLeft, Building2, CheckCircle2, Phone, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { useGigStore } from "@/store/gigStore";
+import TutorialOverlay, { type TutorialStep } from "@/components/TutorialOverlay";
+import { isTutorialDone, markTutorialDone } from "@/lib/tutorial";
 
 const CompanyLogin = () => {
   const nav = useNavigate();
   const setCompany = useGigStore((s) => s.setCompany);
   const [mode, setMode] = useState<"signin" | "trial">("trial");
+  const [tutorialStep, setTutorialStep] = useState(0);
+  const [showTutorial, setShowTutorial] = useState(!isTutorialDone("company_login"));
+  const loginTutorial: TutorialStep[] = [
+    { title: "Start free trial", body: "Fill company name, contact person, phone, email, and password. Phone is shown to workers so they can call you." },
+    { title: "Raise gigs", body: "After signup you land on the company portal to post tickets and track workers." },
+  ];
   const [form, setForm] = useState({
     company: "",
     contactName: "",
@@ -153,6 +161,19 @@ const CompanyLogin = () => {
           </form>
         </div>
       </main>
+      {showTutorial && (
+        <TutorialOverlay
+          steps={loginTutorial}
+          step={tutorialStep}
+          onSkip={() => { markTutorialDone("company_login"); setShowTutorial(false); }}
+          onNext={() => {
+            if (tutorialStep + 1 >= loginTutorial.length) {
+              markTutorialDone("company_login");
+              setShowTutorial(false);
+            } else setTutorialStep((s) => s + 1);
+          }}
+        />
+      )}
     </div>
   );
 };

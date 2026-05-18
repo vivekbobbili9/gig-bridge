@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import SatelliteMap from "@/components/SatelliteMap";
 import RouteMap from "@/components/RouteMap";
-import { ArrowLeft, Bell, Calendar, CheckCircle2, Clock, Globe, IndianRupee, Lock, MapPin, MessageSquare, Navigation, Package, Phone, ShieldCheck, ShieldAlert, Star, Truck, User, Wallet, X } from "lucide-react";
-import { calcPenalty, phoneTel } from "@/store/gigStore";
+import { ArrowLeft, Bell, Calendar, CheckCircle2, Clock, Flame, Globe, IndianRupee, Lock, MapPin, MessageSquare, Navigation, Package, Phone, ShieldCheck, ShieldAlert, Star, Truck, User, Wallet, X } from "lucide-react";
+import { calcPenalty, phoneTel, workerPayPerDay, PENALTY_TOTAL_PCT } from "@/store/gigStore";
 import { toast } from "sonner";
 import { LANGS, type Lang, getStoredLang, setStoredLang, makeT, tr } from "@/i18n/worker";
+import TutorialOverlay, { type TutorialStep } from "@/components/TutorialOverlay";
+import { isTutorialDone, markTutorialDone } from "@/lib/tutorial";
 
 type SortKey = "pay" | "hours" | "distance";
 
@@ -22,8 +24,21 @@ const Worker = () => {
   const [chatGig, setChatGig] = useState<Gig | null>(null);
   const [rateGig, setRateGig] = useState<Gig | null>(null);
   const lastWorkerNoticeRef = useRef<string | null>(null);
+  const [tutorialStep, setTutorialStep] = useState(0);
+  const [showTutorial, setShowTutorial] = useState(!isTutorialDone("worker"));
   const t = useMemo(() => makeT(lang), [lang]);
   const changeLang = (l: Lang) => { setLang(l); setStoredLang(l); setLangOpen(false); };
+
+  const workerTutorialSteps: TutorialStep[] = [
+    { title: "Go online", body: "Turn on the switch at the top to see gigs near you on the map and list." },
+    { title: "Complete KYC", body: "Tap Complete KYC before accepting. Registration uses your mobile OTP on the login screen." },
+    { title: "Accept one gig at a time", body: "Pick days and accept. Other gigs hide until you finish or cancel your current commitment." },
+    { title: "Profile & feedback", body: "Open your profile (top-left avatar) in a separate window for feedback, complaints, and account details." },
+  ];
+
+  const openProfileWindow = () => {
+    window.open(`${window.location.origin}/worker/profile`, "_blank", "noopener,noreferrer,width=480,height=900");
+  };
 
   const acceptedGigIds = accepted.map((a) => a.gigId);
   const activeAcceptance = accepted[0];
@@ -33,14 +48,17 @@ const Worker = () => {
 
   const visibleGigs = useMemo(() => {
     if (!workerOnline) return [];
-    let list = gigs.filter((g) => g.status === "open" || acceptedGigIds.includes(g.id));
-    if (hasActiveGig && activeGig) list = list.filter((g) => g.id === activeGig.id);
+    if (hasActiveGig && activeGig) {
+      return gigs.filter((g) => g.id === activeGig.id);
+    }
+    const list = gigs.filter((g) => g.status === "open");
     return [...list].sort((a, b) => {
-      if (sortKey === "pay") return b.payPerWorker - a.payPerWorker;
+      if (a.urgent !== b.urgent) return a.urgent ? -1 : 1;
+      if (sortKey === "pay") return workerPayPerDay(b) - workerPayPerDay(a);
       if (sortKey === "distance") return a.distanceKm - b.distanceKm;
       return (a.loadingHours + a.unloadingHours) - (b.loadingHours + b.unloadingHours);
     });
-  }, [gigs, workerOnline, sortKey, hasActiveGig, activeGig, acceptedGigIds]);
+  }, [gigs, workerOnline, sortKey, hasActiveGig, activeGig]);
 
   const mapGigs = hasActiveGig && activeGig ? [activeGig] : visibleGigs;
 
@@ -81,7 +99,8 @@ const Worker = () => {
     }
     toast.success(t("accepted_toast", { n: dates.length, s: dates.length > 1 ? "s" : "" }));
     if (pendingPenalty) {
-      toast.info(t("penalty_note", { p: pendingPenalty.amount, c: tr(pendingPenalty.owedToCompany, lang) }));
+      const pct = Math.round(PENALTY_TOTAL_PCT * 100);
+      toast.info(t("penalty_note_pct", { pct, c: tr(pendingPenalty.owedToCompany, lang) }));
     }
     setSelected(null);
   };
@@ -92,9 +111,14 @@ const Worker = () => {
         <div className="flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-3">
             <Button asChild variant="ghost" size="icon"><Link to="/"><ArrowLeft className="h-5 w-5" /></Link></Button>
-            <Link to="/worker/profile" className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-primary shadow-glow transition-base hover:ring-2 hover:ring-primary/50">
+            <button
+              type="button"
+              onClick={openProfileWindow}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-primary shadow-glow transition-base hover:ring-2 hover:ring-primary/50"
+              title="Open profile"
+            >
               <User className="h-5 w-5 text-primary-foreground" />
-            </Link>
+            </button>
             <div>
               <div className="font-display text-sm font-bold leading-tight">{t("hi_name")}</div>
               <div className="text-xs text-muted-foreground">{t("rating")}</div>
@@ -114,7 +138,7 @@ const Worker = () => {
               {kycVerified ? <ShieldCheck className="h-3.5 w-3.5" /> : <ShieldAlert className="h-3.5 w-3.5" />}
               {kycVerified ? t("kyc_done") : kyc.status === "pending" ? t("kyc_pending") : t("kyc_none")}
             </span>
-            {!kycVerified && <span className="text-[10px] uppercase tracking-wider opacity-80">→</span>}
+            {!kycVerified && <span className="text-[10px] uppercase tracking-wider opacity-80">â†’</span>}
           </Link>
         </div>
       </header>
@@ -135,7 +159,7 @@ const Worker = () => {
         </div>
 
         <div className="mt-4 grid grid-cols-3 gap-3">
-          <Mini icon={Wallet} label={t("earnings")} value={`₹${earnings}`} tone="primary" />
+          <Mini icon={Wallet} label={t("earnings")} value={`â‚¹${earnings}`} tone="primary" />
           <Mini icon={CheckCircle2} label={t("accepted")} value={`${accepted.length}`} tone="accent" />
           <Mini icon={Navigation} label={t("distance")} value="12 km" tone="pink" />
         </div>
@@ -176,7 +200,7 @@ const Worker = () => {
                 const avg = companyRatings.length ? (companyRatings.reduce((a, r) => a + r.score, 0) / companyRatings.length).toFixed(1) : null;
                 return (
                   <div key={g.id} className="flex items-center justify-between rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs">
-                    <span className="inline-flex items-center gap-1"><Star className="h-3.5 w-3.5 text-yellow-400" /> {tr(g.title, lang)} · Business {avg ? `${avg}/5` : "unrated"}</span>
+                    <span className="inline-flex items-center gap-1"><Star className="h-3.5 w-3.5 text-yellow-400" /> {tr(g.title, lang)} Â· Business {avg ? `${avg}/5` : "unrated"}</span>
                     {!workerRated && <Button size="sm" variant="outline" onClick={() => setRateGig(g)}>Rate</Button>}
                   </div>
                 );
@@ -186,7 +210,7 @@ const Worker = () => {
         )}
 
         <div className="flex items-center justify-between">
-          <h2 className="font-display text-lg font-bold">{t("available")}</h2>
+          <h2 className="font-display text-lg font-bold">{hasActiveGig ? t("your_active_gig") : t("available")}</h2>
           <span className="text-xs text-muted-foreground">{t("gigs_count", { n: visibleGigs.length })}</span>
         </div>
 
@@ -225,7 +249,7 @@ const Worker = () => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="font-display text-2xl font-extrabold text-primary">₹{g.payPerWorker}</div>
+                    <div className="font-display text-2xl font-extrabold text-primary">₹{workerPayPerDay(g)}</div>
                     <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{t("per_day")}</div>
                   </div>
                 </div>
@@ -233,6 +257,7 @@ const Worker = () => {
                   <Pill icon={Navigation} tone="pink">{g.distanceKm} km</Pill>
                   <Pill icon={Clock} tone="accent">{t("hours_per_day", { h: totalHours })}</Pill>
                   <Pill icon={Calendar} tone="primary">{totalDays} {totalDays > 1 ? t("days") : t("day")}</Pill>
+                  {g.urgent && <span className="inline-flex items-center gap-1 rounded-full bg-destructive/15 px-2 py-1 font-semibold text-destructive"><Flame className="h-3 w-3" /> {t("urgent_tag")}</span>}
                   {isAccepted && <span className="inline-flex items-center gap-1 rounded-full bg-success/15 px-2 py-1 font-semibold text-success"><CheckCircle2 className="h-3 w-3" /> {t("accepted_tag")}</span>}
                 </div>
               </button>
@@ -268,14 +293,14 @@ const Worker = () => {
         }} />
       )}
       {chatGig && <ChatDialog
-        title={`Chat · ${tr(chatGig.companyName, lang)}`}
+        title={`Chat Â· ${tr(chatGig.companyName, lang)}`}
         messages={chatsByGig[chatGig.id] ?? []}
         me="worker"
         onSend={(text) => sendWorkerMessage(chatGig.id, text)}
         onClose={() => setChatGig(null)}
       />}
       {rateGig && <RatingDialog
-        title={`Rate business · ${tr(rateGig.companyName, lang)}`}
+        title={`Rate business Â· ${tr(rateGig.companyName, lang)}`}
         onClose={() => setRateGig(null)}
         onSubmit={(score, complaint) => {
           submitWorkerRating(rateGig.id, score, complaint);
@@ -283,6 +308,20 @@ const Worker = () => {
           setRateGig(null);
         }}
       />}
+
+      {showTutorial && (
+        <TutorialOverlay
+          steps={workerTutorialSteps}
+          step={tutorialStep}
+          onSkip={() => { markTutorialDone("worker"); setShowTutorial(false); }}
+          onNext={() => {
+            if (tutorialStep + 1 >= workerTutorialSteps.length) {
+              markTutorialDone("worker");
+              setShowTutorial(false);
+            } else setTutorialStep((s) => s + 1);
+          }}
+        />
+      )}
 
       {langOpen && (
         <div className="fixed inset-0 z-[600] flex items-end justify-center bg-background/70 backdrop-blur-sm" onClick={() => setLangOpen(false)}>
@@ -330,7 +369,7 @@ const GigSheet = ({ gig, lang, existingDates, hasActiveOther, onClose, onAccept,
     const d = new Date(iso + "T00:00:00");
     return { day: d.toLocaleDateString(undefined, { weekday: "short" }), date: d.getDate() };
   };
-  const total = picked.length * gig.payPerWorker;
+  const total = picked.length * workerPayPerDay(gig);
 
   return (
     <div className="fixed inset-0 z-[500] flex items-end justify-center bg-background/70 backdrop-blur-sm" onClick={onClose}>
@@ -340,10 +379,10 @@ const GigSheet = ({ gig, lang, existingDates, hasActiveOther, onClose, onAccept,
           <div>
             <div className="text-xs font-semibold uppercase tracking-wider text-accent">{tr(gig.companyName, lang)}</div>
             <div className="mt-0.5 font-display text-xl font-extrabold leading-tight">{tr(gig.title, lang)}</div>
-            <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground"><MapPin className="h-3 w-3" /> {tr(gig.location, lang)} · {gig.distanceKm} km</div>
+            <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground"><MapPin className="h-3 w-3" /> {tr(gig.location, lang)} Â· {gig.distanceKm} km</div>
           </div>
           <div className="text-right">
-            <div className="font-display text-3xl font-extrabold text-primary">₹{gig.payPerWorker}</div>
+            <div className="font-display text-3xl font-extrabold text-primary">₹{workerPayPerDay(gig)}</div>
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{t("per_day")}</div>
           </div>
         </div>
@@ -406,7 +445,7 @@ const GigSheet = ({ gig, lang, existingDates, hasActiveOther, onClose, onAccept,
               <div className="font-display text-2xl font-extrabold text-primary">₹{total}</div>
             </div>
             <div className="text-right text-xs text-muted-foreground">
-              {picked.length} {picked.length !== 1 ? t("days") : t("day")} × ₹{gig.payPerWorker}
+              {picked.length} {picked.length !== 1 ? t("days") : t("day")} × ₹{workerPayPerDay(gig)}
             </div>
           </div>
           {gig.notes && <p className="mt-3 text-sm text-foreground">{tr(gig.notes, lang)}</p>}
@@ -442,10 +481,12 @@ const CancelDialog = ({ gig, remainingDays, lang, t, onClose, onConfirm }: { gig
           <ShieldAlert className="h-5 w-5" />
           <h3 className="font-display text-lg font-bold">{t("cancel_gig")}</h3>
         </div>
-        <p className="text-sm text-muted-foreground">{t("cancel_warn_pct", { p: total, c: tr(gig.companyName, lang) })}</p>
+        <p className="text-sm font-semibold text-destructive">{t("cancel_warn_pct_short")}</p>
+        <p className="mt-2 text-sm text-muted-foreground">{t("cancel_warn_pct_detail", { c: tr(gig.companyName, lang) })}</p>
         <div className="mt-3 rounded-xl bg-muted/50 p-3 text-xs text-muted-foreground">
           <div>{t("penalty_split_worker", { p: workerShare })}</div>
           <div className="mt-1">{t("penalty_split_company", { p: companyShare, c: tr(gig.companyName, lang) })}</div>
+          <div className="mt-2 border-t border-border pt-2 text-[10px]">{t("penalty_total_line", { pct: 5, p: total })}</div>
         </div>
         <div className="mt-5 flex gap-3">
           <Button variant="ghost" onClick={onClose} className="flex-1">{t("keep")}</Button>

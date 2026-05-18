@@ -30,6 +30,9 @@ export interface Gig {
   createdAt: number;
   reclaimedFromPenalty?: number;
   bonusForNextWorker?: number;
+  urgent?: boolean;
+  urgentTip?: number;
+  urgentAt?: number;
 }
 
 export interface AcceptedGig {
@@ -90,6 +93,8 @@ export interface PartyRating {
   id: string;
   gigId: string;
   by: "worker" | "company";
+  workerId?: string;
+  workerName?: string;
   score: number;
   complaint?: string;
   createdAt: number;
@@ -105,12 +110,14 @@ export interface CompanyProfile {
 
 export interface FeedbackItem {
   id: string;
-  workerId: string;
+  submitter: "worker" | "company";
+  workerId?: string;
+  companyName?: string;
   type: "feedback" | "complaint";
   subject: string;
   message: string;
   gigId?: string;
-  companyName?: string;
+  relatedCompanyName?: string;
   createdAt: number;
   status: "open" | "resolved";
 }
@@ -141,12 +148,14 @@ interface GigStore {
   sendCompanyMessage: (gigId: string, text: string) => void;
   submitWorkerRating: (gigId: string, score: number, complaint?: string) => void;
   submitCompanyRating: (gigId: string, score: number, complaint?: string) => void;
+  submitCompanyWorkerRating: (gigId: string, workerId: string, workerName: string, score: number, complaint?: string) => void;
+  markGigUrgent: (gigId: string, tip: number) => void;
   toggleOnline: () => void;
   tickPositions: () => void;
   setKyc: (data: Partial<KycData> & { status: KycStatus }) => void;
   setCompany: (profile: CompanyProfile) => void;
   setWorkerPhone: (phone: string) => void;
-  submitFeedback: (item: Omit<FeedbackItem, "id" | "workerId" | "createdAt" | "status">) => void;
+  submitFeedback: (item: Omit<FeedbackItem, "id" | "createdAt" | "status">) => void;
   payWorkers: (gigId: string) => number;
 }
 
@@ -154,6 +163,21 @@ const CENTER = { lat: 12.9716, lng: 77.5946 };
 const TRAVEL_SPEED_KMPH = 24;
 const POSITION_TICK_SECONDS = 3;
 const DEFAULT_COMPANY_PHONE = "+91 80 4567 8900";
+export const STALE_GIG_MS = 2 * 60 * 60 * 1000;
+
+export const isGigStale = (gig: Gig) =>
+  gig.status === "open"
+  && gig.workersAccepted < gig.workersNeeded
+  && Date.now() - gig.createdAt >= STALE_GIG_MS;
+
+export const canMarkGigUrgent = (gig: Gig, companyNotices: AppNotice[]) => {
+  if (gig.status !== "open" && gig.status !== "assigned") return false;
+  if (gig.workersAccepted >= gig.workersNeeded) return false;
+  if (isGigStale(gig)) return true;
+  return companyNotices.some((n) => n.gigId === gig.id && n.type === "worker_cancelled");
+};
+
+export const workerPayPerDay = (gig: Gig) => gig.payPerWorker + (gig.urgentTip ?? 0) + (gig.bonusForNextWorker ?? 0);
 
 export const PENALTY_TOTAL_PCT = 0.05;
 export const PENALTY_WORKER_PCT = 0.03;
@@ -209,7 +233,7 @@ const seed: Gig[] = [
     location: "Bommasandra Industrial Area", lat: 12.8120, lng: 77.6980, distanceKm: 8.6,
     startDate: iso(today), endDate: iso(addDays(today, 3)),
     dailyStartTime: "9:00 PM", dailyEndTime: "11:00 PM",
-    status: "open", createdAt: Date.now() - 1000 * 60 * 90,
+    status: "open", createdAt: Date.now() - STALE_GIG_MS - 1000 * 60 * 30,
   },
 ];
 
@@ -423,8 +447,35 @@ export const useGigStore = create<GigStore>((set, get) => ({
   submitCompanyRating: (gigId, score, complaint) =>
     set((s) => {
       if (score < 1 || score > 5) return s;
-      if (s.ratings.some((r) => r.gigId === gigId && r.by === "company")) return s;
+      if (s.ratings.some((r) => r.gigId === gigId && r.by === "company" && !r.workerId)) return s;
       return { ratings: [...s.ratings, makeRating(gigId, "company", score, complaint)] };
+    }),
+  submitCompanyWorkerRating: (gigId, workerId, workerName, score, complaint) =>
+    set((s) => {
+      if (score < 1 || score > 5) return s;
+      if (s.ratings.some((r) => r.gigId === gigId && r.by === "company" && r.workerId === workerId)) return s;
+      return {
+        ratings: [...s.ratings, {
+          ...makeRating(gigId, "company", score, complaint),
+          workerId,
+          workerName,
+        }],
+      };
+    }),
+  markGigUrgent: (gigId, tip) =>
+    set((s) => {
+      const gig = s.gigs.find((g) => g.id === gigId);
+      if (!gig || !canMarkGigUrgent(gig, s.companyNotices)) return s;
+      const workerNotices = [
+        makeNotice("accepted", gig, `${gig.companyName} marked ${gig.title} URGENT — +₹${tip} tip per worker.`),
+        ...s.workerNotices,
+      ];
+      return {
+        gigs: s.gigs.map((g) => g.id === gigId
+          ? { ...g, urgent: true, urgentTip: Math.max(0, tip), urgentAt: Date.now() }
+          : g),
+        workerNotices,
+      };
     }),
   toggleOnline: () => set((s) => ({ workerOnline: !s.workerOnline })),
   tickPositions: () =>
@@ -461,7 +512,8 @@ export const useGigStore = create<GigStore>((set, get) => ({
       feedback: [{
         ...item,
         id: `fb-${Date.now()}`,
-        workerId: s.workerId,
+        workerId: item.submitter === "worker" ? s.workerId : item.workerId,
+        companyName: item.submitter === "company" ? (s.company?.name ?? item.companyName) : item.companyName,
         createdAt: Date.now(),
         status: "open",
       }, ...s.feedback],

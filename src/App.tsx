@@ -11,6 +11,7 @@ import CompanyLogin from "./pages/CompanyLogin.tsx";
 import WorkerLogin from "./pages/WorkerLogin.tsx";
 import WorkerKyc from "./pages/WorkerKyc.tsx";
 import WorkerProfile from "./pages/WorkerProfile.tsx";
+import CompanyFeedback from "./pages/CompanyFeedback.tsx";
 
 const queryClient = new QueryClient();
 
@@ -25,6 +26,7 @@ const App = () => (
           <Route path="/login/company" element={<CompanyLogin />} />
           <Route path="/login/worker" element={<WorkerLogin />} />
           <Route path="/company" element={<Company />} />
+          <Route path="/company/feedback" element={<CompanyFeedback />} />
           <Route path="/worker" element={<Worker />} />
           <Route path="/worker/kyc" element={<WorkerKyc />} />
           <Route path="/worker/profile" element={<WorkerProfile />} />

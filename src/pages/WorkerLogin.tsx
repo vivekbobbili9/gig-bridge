@@ -5,11 +5,19 @@ import { Input } from "@/components/ui/input";
 import { ArrowLeft, HardHat, Phone, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { useGigStore } from "@/store/gigStore";
+import TutorialOverlay, { type TutorialStep } from "@/components/TutorialOverlay";
+import { isTutorialDone, markTutorialDone } from "@/lib/tutorial";
 
 const WorkerLogin = () => {
   const nav = useNavigate();
   const setWorkerPhone = useGigStore((s) => s.setWorkerPhone);
   const [step, setStep] = useState<"phone" | "otp">("phone");
+  const [tutorialStep, setTutorialStep] = useState(0);
+  const [showTutorial, setShowTutorial] = useState(!isTutorialDone("worker_login"));
+  const loginTutorial: TutorialStep[] = [
+    { title: "Register with mobile", body: "Enter your 10-digit number and tap Send OTP. Demo OTP is 1234." },
+    { title: "Complete KYC", body: "After login, open KYC from the worker home screen before accepting paid gigs." },
+  ];
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
 
@@ -104,6 +112,19 @@ const WorkerLogin = () => {
           </p>
         </div>
       </main>
+      {showTutorial && (
+        <TutorialOverlay
+          steps={loginTutorial}
+          step={tutorialStep}
+          onSkip={() => { markTutorialDone("worker_login"); setShowTutorial(false); }}
+          onNext={() => {
+            if (tutorialStep + 1 >= loginTutorial.length) {
+              markTutorialDone("worker_login");
+              setShowTutorial(false);
+            } else setTutorialStep((s) => s + 1);
+          }}
+        />
+      )}
     </div>
   );
 };
