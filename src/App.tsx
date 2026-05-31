@@ -3,15 +3,11 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Company from "./pages/Company.tsx";
-import Worker from "./pages/Worker.tsx";
 import CompanyLogin from "./pages/CompanyLogin.tsx";
-import WorkerLogin from "./pages/WorkerLogin.tsx";
-import WorkerKyc from "./pages/WorkerKyc.tsx";
-import WorkerProfile from "./pages/WorkerProfile.tsx";
 import CompanyFeedback from "./pages/CompanyFeedback.tsx";
+import WorkerFlow from "./pages/WorkerFlow.tsx";
 
 const queryClient = new QueryClient();
 
@@ -22,15 +18,16 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
+          {/* Main Worker Flow */}
+          <Route path="/" element={<WorkerFlow />} />
+          <Route path="/login/worker" element={<WorkerFlow />} />
+          <Route path="/worker/*" element={<WorkerFlow />} />
+
+          {/* Company Portal */}
           <Route path="/login/company" element={<CompanyLogin />} />
-          <Route path="/login/worker" element={<WorkerLogin />} />
           <Route path="/company" element={<Company />} />
           <Route path="/company/feedback" element={<CompanyFeedback />} />
-          <Route path="/worker" element={<Worker />} />
-          <Route path="/worker/kyc" element={<WorkerKyc />} />
-          <Route path="/worker/profile" element={<WorkerProfile />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
