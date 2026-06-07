@@ -433,10 +433,10 @@ const WorkerFlow = () => {
               </div>
               {'subPlaceholder' in currentItem && (
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{currentItem.subPlaceholder}</label>
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{String((currentItem as any).subPlaceholder)}</label>
                   <input
                     className="w-full h-16 rounded-xl bg-[#1A1C1E] border border-white/5 px-6 font-bold outline-none focus:border-green-500/50"
-                    placeholder={currentItem.subPlaceholder}
+                    placeholder={String((currentItem as any).subPlaceholder)}
                     value={kycValue2}
                     onChange={(e) => setKycValue2(e.target.value)}
                   />
