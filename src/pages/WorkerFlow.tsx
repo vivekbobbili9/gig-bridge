@@ -532,18 +532,26 @@ const WorkerFlow = () => {
                </div>
             )}
 
-            <div className={`space-y-3 ${!isProfileComplete ? 'opacity-30' : ''}`}>
+            <div className={`space-y-3 ${!isProfileComplete ? 'opacity-60' : ''}`}>
                {kycItems.map(item => {
                  const isDone = kyc[item.key as keyof typeof kyc];
+                 const isLocked = !isProfileComplete;
                  return (
                    <button
                     key={item.key}
-                    onClick={() => isProfileComplete && setActiveKyc(item.key)}
-                    className="w-full p-4 rounded-2xl bg-[#1A1C1E] flex items-center justify-between border border-white/5 active:scale-[0.98] transition-all"
+                    onClick={() => !isLocked && setActiveKyc(item.key)}
+                    disabled={isLocked}
+                    aria-disabled={isLocked}
+                    className={`w-full p-4 rounded-2xl bg-[#1A1C1E] flex items-center justify-between border border-white/5 transition-all ${isLocked ? 'cursor-not-allowed' : 'active:scale-[0.98]'}`}
                    >
                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-[#2A2C2E] flex items-center justify-center border border-white/5">
+                        <div className="w-12 h-12 rounded-xl bg-[#2A2C2E] flex items-center justify-center border border-white/5 relative">
                            <item.icon size={24} className={isDone ? "text-green-500" : "text-slate-500"} />
+                           {isLocked && (
+                             <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#4D3319] border border-[#FFB74D]/30 flex items-center justify-center">
+                                <Lock size={10} className="text-[#FFB74D]" />
+                             </div>
+                           )}
                         </div>
                         <div className="text-left">
                            <p className="font-bold text-white text-sm">{item.label}</p>
@@ -551,7 +559,20 @@ const WorkerFlow = () => {
                         </div>
                      </div>
                      <div className="flex items-center gap-2 text-slate-600 text-[10px] font-black uppercase tracking-widest">
-                        {isDone ? <Check size={16} className="text-green-500" strokeWidth={4} /> : <div className="flex items-center gap-1.5"><Lock size={12} /> Locked</div>}
+                        {isLocked ? (
+                          <div className="flex items-center gap-1.5 bg-[#4D3319]/40 px-2 py-1 rounded-full text-[#FFB74D]/80 border border-[#FFB74D]/20">
+                            <Lock size={10} /> Locked
+                          </div>
+                        ) : isDone ? (
+                          <div className="flex items-center gap-1.5 text-green-500">
+                            <Check size={16} strokeWidth={4} />
+                            <Pencil size={12} className="text-slate-400" />
+                          </div>
+                        ) : (
+                          <div className="bg-[#4D3319] px-3 py-1.5 rounded-full text-[#FFB74D] text-[9px] font-black uppercase tracking-widest border border-[#FFB74D]/20">
+                            Please Fill
+                          </div>
+                        )}
                      </div>
                    </button>
                  );
@@ -562,18 +583,26 @@ const WorkerFlow = () => {
           {/* PAYMENT DETAILS */}
           <div className="space-y-4 pb-8">
             <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Payment Details</h3>
-            <div className={`space-y-3 ${!isProfileComplete ? 'opacity-30' : ''}`}>
+            <div className={`space-y-3 ${!isProfileComplete ? 'opacity-60' : ''}`}>
                {paymentItems.map(item => {
                  const isDone = kyc[item.key as keyof typeof kyc];
+                 const isLocked = !isProfileComplete;
                  return (
                    <button
                     key={item.key}
-                    onClick={() => isProfileComplete && setActiveKyc(item.key)}
-                    className="w-full p-4 rounded-2xl bg-[#1A1C1E] flex items-center justify-between border border-white/5 active:scale-[0.98] transition-all"
+                    onClick={() => !isLocked && setActiveKyc(item.key)}
+                    disabled={isLocked}
+                    aria-disabled={isLocked}
+                    className={`w-full p-4 rounded-2xl bg-[#1A1C1E] flex items-center justify-between border border-white/5 transition-all ${isLocked ? 'cursor-not-allowed' : 'active:scale-[0.98]'}`}
                    >
                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-[#2A2C2E] flex items-center justify-center border border-white/5">
+                        <div className="w-12 h-12 rounded-xl bg-[#2A2C2E] flex items-center justify-center border border-white/5 relative">
                            <item.icon size={24} className={isDone ? "text-green-500" : "text-slate-500"} />
+                           {isLocked && (
+                             <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#4D3319] border border-[#FFB74D]/30 flex items-center justify-center">
+                                <Lock size={10} className="text-[#FFB74D]" />
+                             </div>
+                           )}
                         </div>
                         <div className="text-left">
                            <p className="font-bold text-white text-sm">{item.label}</p>
@@ -581,13 +610,27 @@ const WorkerFlow = () => {
                         </div>
                      </div>
                      <div className="flex items-center gap-2 text-slate-600 text-[10px] font-black uppercase tracking-widest">
-                        {isDone ? <Check size={16} className="text-green-500" strokeWidth={4} /> : <div className="flex items-center gap-1.5"><Lock size={12} /> Locked</div>}
+                        {isLocked ? (
+                          <div className="flex items-center gap-1.5 bg-[#4D3319]/40 px-2 py-1 rounded-full text-[#FFB74D]/80 border border-[#FFB74D]/20">
+                            <Lock size={10} /> Locked
+                          </div>
+                        ) : isDone ? (
+                          <div className="flex items-center gap-1.5 text-green-500">
+                            <Check size={16} strokeWidth={4} />
+                            <Pencil size={12} className="text-slate-400" />
+                          </div>
+                        ) : (
+                          <div className="bg-[#4D3319] px-3 py-1.5 rounded-full text-[#FFB74D] text-[9px] font-black uppercase tracking-widest border border-[#FFB74D]/20">
+                            Please Fill
+                          </div>
+                        )}
                      </div>
                    </button>
                  );
                })}
             </div>
           </div>
+
         </div>
 
         <button onClick={reset} className="p-4 text-slate-700 text-[10px] font-black uppercase tracking-widest hover:text-red-500/50 transition-colors mx-auto mb-4">
