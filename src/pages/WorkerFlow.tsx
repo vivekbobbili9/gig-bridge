@@ -419,9 +419,14 @@ const WorkerFlow = () => {
     return (
       <MobileWrapper className="bg-dashboard">
         {/* KYC Form Overlay */}
-        {activeKyc && currentItem && (
-          <div className="fixed inset-0 z-50 bg-[#121212] p-6 flex flex-col">
-            <button onClick={() => { setActiveKyc(null); setKycValue(""); setKycValue2(""); }} className="self-start p-2 -ml-2 text-slate-400 mb-8">
+        {activeKyc && currentItem && (() => {
+          const needsUpload = ["aadhar", "pan", "drivingLicense"].includes(activeKyc);
+          const closeOverlay = () => {
+            setActiveKyc(null); setKycValue(""); setKycValue2(""); setKycFile(null);
+          };
+          return (
+          <div className="fixed inset-0 z-50 bg-[#121212] p-6 flex flex-col overflow-y-auto">
+            <button onClick={closeOverlay} className="self-start p-2 -ml-2 text-slate-400 mb-8">
               <ArrowLeft size={24} />
             </button>
             <h2 className="text-2xl font-bold mb-8">Enter {currentItem.label}</h2>
@@ -447,21 +452,95 @@ const WorkerFlow = () => {
                   />
                 </div>
               )}
+
+              {needsUpload && (
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
+                    Upload {currentItem.label} (Image or PDF)
+                  </label>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*,application/pdf"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (!f) return;
+                      if (f.size > 5 * 1024 * 1024) {
+                        toast.error("File must be under 5MB");
+                        return;
+                      }
+                      setKycFile(f);
+                    }}
+                  />
+                  {!kycFile ? (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full min-h-[120px] rounded-xl bg-[#1A1C1E] border-2 border-dashed border-white/10 hover:border-green-500/40 transition-all flex flex-col items-center justify-center gap-2 py-6"
+                    >
+                      <div className="w-12 h-12 rounded-xl bg-[#2A2C2E] flex items-center justify-center">
+                        <Upload size={20} className="text-green-500" />
+                      </div>
+                      <p className="text-xs font-bold text-white">Tap to upload</p>
+                      <p className="text-[10px] text-slate-500 font-medium">PNG, JPG or PDF · Max 5MB</p>
+                    </button>
+                  ) : (
+                    <div className="w-full p-4 rounded-xl bg-[#1A1C1E] border border-green-500/30 flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center shrink-0">
+                        <FileImage size={20} className="text-green-500" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-sm text-white truncate">{kycFile.name}</p>
+                        <p className="text-[10px] text-slate-500 font-medium">
+                          {(kycFile.size / 1024).toFixed(0)} KB · {kycFile.type || "file"}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:bg-white/10"
+                          aria-label="Replace file"
+                        >
+                          <Pencil size={12} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setKycFile(null)}
+                          className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:bg-red-500/20"
+                          aria-label="Remove file"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             <button
               onClick={() => {
+                if (!kycValue.trim()) {
+                  toast.error(`Please enter your ${currentItem.label} number`);
+                  return;
+                }
+                if (needsUpload && !kycFile) {
+                  toast.error(`Please upload your ${currentItem.label}`);
+                  return;
+                }
                 setKycStatus(activeKyc as any, true);
-                setActiveKyc(null);
-                setKycValue("");
-                setKycValue2("");
+                closeOverlay();
                 toast.success(`${currentItem.label} Saved!`);
               }}
-              className="w-full h-14 bg-green-600 text-white font-bold rounded-xl mt-auto mb-8 shadow-lg shadow-green-600/20"
+              className="w-full h-14 bg-green-600 text-white font-bold rounded-xl mt-8 mb-4 shadow-lg shadow-green-600/20"
             >
               Verify & Save
             </button>
           </div>
-        )}
+          );
+        })()}
+
 
         <div className="bg-[#0D3020] p-8 pb-10 rounded-b-[3rem] shadow-xl relative overflow-hidden">
            <div className="flex flex-col gap-1 relative z-10">
