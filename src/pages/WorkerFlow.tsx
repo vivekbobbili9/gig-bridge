@@ -18,8 +18,10 @@ import {
   FileText,
   CreditCard,
   User,
-  Plus
-} from "lucide-react";
+  Plus,
+  Upload,
+  FileImage,
+  X
 import { toast } from "sonner";
 
 const WorkerFlow = () => {
