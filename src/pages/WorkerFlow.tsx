@@ -583,10 +583,21 @@ const WorkerFlow = () => {
           {/* PAYMENT DETAILS */}
           <div className="space-y-4 pb-8">
             <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Payment Details</h3>
-            <div className={`space-y-3 ${!isProfileComplete ? 'opacity-60' : ''}`}>
+            {(!isProfileComplete || !(kyc.aadhar && kyc.pan)) && (
+               <div className="p-4 rounded-xl bg-white/5 border border-dashed border-white/10 flex items-center gap-3">
+                  <Lock size={16} className="text-slate-600" />
+                  <p className="text-[9px] text-slate-500 font-bold uppercase leading-relaxed tracking-wider">
+                    {!isProfileComplete
+                      ? "Complete your basic information to unlock payment details."
+                      : "Complete Aadhar & PAN verification to unlock payment details."}
+                  </p>
+               </div>
+            )}
+            <div className={`space-y-3 ${(!isProfileComplete || !(kyc.aadhar && kyc.pan)) ? 'opacity-60' : ''}`}>
                {paymentItems.map(item => {
                  const isDone = kyc[item.key as keyof typeof kyc];
-                 const isLocked = !isProfileComplete;
+                 const isLocked = !isProfileComplete || !(kyc.aadhar && kyc.pan);
+
                  return (
                    <button
                     key={item.key}
