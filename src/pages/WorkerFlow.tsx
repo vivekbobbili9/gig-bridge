@@ -36,7 +36,9 @@ const WorkerFlow = () => {
   const [activeKyc, setActiveKyc] = useState<string | null>(null);
   const [kycValue, setKycValue] = useState("");
   const [kycValue2, setKycValue2] = useState("");
+  const [kycFile, setKycFile] = useState<File | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // OTP Refs
   const otpRefs = [useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null)];
