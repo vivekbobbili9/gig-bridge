@@ -22,6 +22,7 @@ import {
   Upload,
   FileImage,
   X
+} from "lucide-react";
 import { toast } from "sonner";
 
 const WorkerFlow = () => {
