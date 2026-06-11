@@ -3,52 +3,21 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Building2, CheckCircle2, Phone, Sparkles } from "lucide-react";
+import { ArrowLeft, Building2, CheckCircle2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { useGigStore } from "@/store/gigStore";
-import TutorialOverlay, { type TutorialStep } from "@/components/TutorialOverlay";
-import { isTutorialDone, markTutorialDone } from "@/lib/tutorial";
 
 const CompanyLogin = () => {
   const nav = useNavigate();
   const setCompany = useGigStore((s) => s.setCompany);
-  const [mode, setMode] = useState<"signin" | "trial">("trial");
-  const [tutorialStep, setTutorialStep] = useState(0);
-  const [showTutorial, setShowTutorial] = useState(!isTutorialDone("company_login"));
-  const loginTutorial: TutorialStep[] = [
-    { title: "Start free trial", body: "Fill company name, contact person, phone, email, and password. Phone is shown to workers so they can call you." },
-    { title: "Raise gigs", body: "After signup you land on the company portal to post tickets and track workers." },
-  ];
-  const [form, setForm] = useState({
-    company: "",
-    contactName: "",
-    email: "",
-    phone: "",
-    address: "",
-    password: "",
-  });
+  const [form, setForm] = useState({ email: "", password: "" });
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.email) return toast.error("Enter your work email");
-
-    if (mode === "trial") {
-      if (!form.company.trim()) return toast.error("Enter company name");
-      if (!form.contactName.trim()) return toast.error("Enter contact person name");
-      if (form.phone.replace(/\D/g, "").length !== 10) return toast.error("Enter a valid 10-digit phone number");
-      if (!form.password || form.password.length < 6) return toast.error("Password must be at least 6 characters");
-
-      setCompany({
-        name: form.company.trim(),
-        contactName: form.contactName.trim(),
-        email: form.email.trim(),
-        phone: `+91 ${form.phone.replace(/\D/g, "")}`,
-        address: form.address.trim() || undefined,
-      });
-      toast.success("Free trial started — 14 days, no card needed");
-    } else {
-      toast.success("Welcome back");
-    }
+    if (!form.email.trim()) return toast.error("Enter your business email");
+    if (form.password.length < 6) return toast.error("Password must be at least 6 characters");
+    setCompany({ name: "", contactName: "", email: form.email.trim(), phone: "" });
+    toast.success("Welcome back");
     nav("/company");
   };
 
@@ -66,17 +35,17 @@ const CompanyLogin = () => {
       <main className="relative z-10 container grid items-center gap-12 py-10 lg:grid-cols-2 lg:py-16">
         <div className="animate-fade-up">
           <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary">
-            <Sparkles className="h-3 w-3" /> 14-day free trial
+            <Sparkles className="h-3 w-3" /> Company Portal
           </span>
           <h1 className="mt-5 font-display text-4xl font-extrabold leading-tight sm:text-5xl">
             Hire ground-ops crews <span className="text-primary">without contractors</span>.
           </h1>
           <p className="mt-4 max-w-md text-lg text-muted-foreground">
-            Post unlimited gigs during your trial. No credit card. Cancel anytime.
+            Post unlimited gigs, track workers in real-time, and manage payouts — all in one place.
           </p>
           <ul className="mt-6 space-y-3">
             {[
-              "Unlimited tickets for 14 days",
+              "Unlimited gig tickets",
               "Real-time slot fill tracking",
               "Direct worker payouts — 0% middleman cut",
               "Verified worker pool, ratings & history",
@@ -89,91 +58,53 @@ const CompanyLogin = () => {
         </div>
 
         <div className="animate-fade-up rounded-3xl border border-border bg-card/80 p-8 shadow-elevated backdrop-blur-xl">
-          <div className="mb-5 flex items-center gap-3">
+          <div className="mb-6 flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-primary shadow-glow">
               <Building2 className="h-5 w-5 text-primary-foreground" />
             </div>
             <div>
-              <div className="font-display text-xl font-bold">Company portal</div>
+              <div className="font-display text-xl font-bold">Company sign in</div>
               <div className="text-xs text-muted-foreground">For businesses hiring ground crews</div>
             </div>
           </div>
 
-          <div className="mb-5 grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
-            <button
-              onClick={() => setMode("trial")}
-              className={`rounded-lg py-2 text-sm font-semibold transition-base ${mode === "trial" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground"}`}
-            >Start free trial</button>
-            <button
-              onClick={() => setMode("signin")}
-              className={`rounded-lg py-2 text-sm font-semibold transition-base ${mode === "signin" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground"}`}
-            >Sign in</button>
-          </div>
-
           <form onSubmit={submit} className="space-y-4">
-            {mode === "trial" && (
-              <>
-                <div>
-                  <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Company name</Label>
-                  <Input value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} placeholder="BlueCart Logistics" className="mt-1.5" required />
-                </div>
-                <div>
-                  <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Contact person</Label>
-                  <Input value={form.contactName} onChange={(e) => setForm({ ...form, contactName: e.target.value })} placeholder="Priya Sharma" className="mt-1.5" required />
-                </div>
-                <div>
-                  <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Company phone</Label>
-                  <div className="mt-1.5 flex items-center gap-2 rounded-md border border-input bg-background px-3">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-semibold">+91</span>
-                    <Input
-                      inputMode="numeric"
-                      maxLength={10}
-                      value={form.phone}
-                      onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, "") })}
-                      placeholder="98765 43210"
-                      className="border-0 bg-transparent px-1 focus-visible:ring-0"
-                      required
-                    />
-                  </div>
-                  <p className="mt-1 text-[10px] text-muted-foreground">Workers can call this number for gig coordination</p>
-                </div>
-                <div>
-                  <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Business address (optional)</Label>
-                  <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Whitefield, Bengaluru" className="mt-1.5" />
-                </div>
-              </>
-            )}
             <div>
-              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Work email</Label>
-              <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="ops@yourcompany.com" className="mt-1.5" required />
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Business Email</Label>
+              <Input
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                placeholder="ops@yourcompany.com"
+                className="mt-1.5"
+                required
+              />
             </div>
             <div>
               <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Password</Label>
-              <Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="••••••••" className="mt-1.5" required />
+              <Input
+                type="password"
+                value={form.password}
+                onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+                placeholder="••••••••"
+                className="mt-1.5"
+                required
+              />
             </div>
             <Button type="submit" size="lg" className="w-full bg-primary text-primary-foreground shadow-glow hover:bg-primary/90">
-              {mode === "trial" ? "Start 14-day free trial" : "Sign in"}
+              Sign in
             </Button>
             <p className="text-center text-xs text-muted-foreground">
-              Are you a worker? <Link to="/login/worker" className="font-semibold text-accent hover:underline">Open worker app</Link>
+              Don't have an account?{" "}
+              <Link to="/signup/company" className="font-semibold text-accent hover:underline">Create one</Link>
+            </p>
+            <p className="text-center text-xs text-muted-foreground">
+              Are you a worker?{" "}
+              <Link to="/login/worker" className="font-semibold text-accent hover:underline">Open worker app</Link>
             </p>
           </form>
         </div>
       </main>
-      {showTutorial && (
-        <TutorialOverlay
-          steps={loginTutorial}
-          step={tutorialStep}
-          onSkip={() => { markTutorialDone("company_login"); setShowTutorial(false); }}
-          onNext={() => {
-            if (tutorialStep + 1 >= loginTutorial.length) {
-              markTutorialDone("company_login");
-              setShowTutorial(false);
-            } else setTutorialStep((s) => s + 1);
-          }}
-        />
-      )}
     </div>
   );
 };

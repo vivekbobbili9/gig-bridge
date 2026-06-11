@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "./pages/NotFound.tsx";
 import Company from "./pages/Company.tsx";
 import CompanyLogin from "./pages/CompanyLogin.tsx";
+import CompanySignup from "./pages/CompanySignup.tsx";
 import CompanyFeedback from "./pages/CompanyFeedback.tsx";
 import WorkerFlow from "./pages/WorkerFlow.tsx";
 
@@ -25,6 +26,7 @@ const App = () => (
 
           {/* Company Portal */}
           <Route path="/login/company" element={<CompanyLogin />} />
+          <Route path="/signup/company" element={<CompanySignup />} />
           <Route path="/company" element={<Company />} />
           <Route path="/company/feedback" element={<CompanyFeedback />} />
 
