@@ -1,0 +1,1467 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fintech App Onboarding</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0f0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#fff;height:100vh;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.app{width:100%;max-width:420px;height:100vh;position:relative;overflow:hidden;background:#0a0f0a}
+.screen{display:none;flex-direction:column;height:100vh;overflow-y:auto;overflow-x:hidden}
+.screen.active{display:flex}
+
+/* SPLASH */
+#s-splash{background:radial-gradient(ellipse at 50% 30%,#1a3a1a 0%,#0a0f0a 60%);align-items:center;justify-content:space-between;padding:0 28px 40px}
+.splash-top{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px}
+.logo-box{width:100px;height:100px;background:linear-gradient(145deg,#7fff00,#3ddc57);border-radius:26px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 40px #7fff0066,0 0 80px #7fff0033}
+.logo-box i{font-size:46px;color:#000}
+.splash-label{font-size:11px;letter-spacing:3px;color:#aaa;font-weight:500}
+.splash-brand{font-size:34px;font-weight:800;color:#fff;text-align:center}
+.splash-brand span{color:#7fff00}
+.splash-sub{font-size:14px;color:#888}
+.btn-neon{width:100%;background:#7fff00;color:#000;border:none;border-radius:18px;padding:17px 24px;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .18s}
+.btn-neon:hover{background:#9fff33}
+.btn-neon i{font-size:18px}
+
+/* TOPBAR */
+.topbar{display:flex;align-items:center;gap:10px;padding:16px 20px 10px;flex-shrink:0}
+.topbar-back{background:none;border:none;color:#fff;cursor:pointer;padding:4px;border-radius:8px;display:flex;align-items:center;gap:6px;font-size:14px;font-weight:500}
+.topbar-back:hover{color:#7fff00}
+.topbar-icon{font-size:16px;color:#7fff00}
+.topbar-title{font-size:15px;font-weight:600}
+.topbar-sub{font-size:12px;color:#888;margin-top:1px}
+
+/* CHOICE */
+#s-choice{background:radial-gradient(ellipse at 50% 80%,#0f2a0f 0%,#0a0f0a 55%);justify-content:space-between;padding:40px 24px 40px}
+.choice-top{display:flex;flex-direction:column;align-items:center;gap:8px}
+.choice-title{font-size:28px;font-weight:800}
+.choice-sub{font-size:14px;color:#888}
+.choice-cards{display:flex;flex-direction:column;gap:14px}
+.choice-card{border-radius:18px;padding:18px 20px;display:flex;align-items:center;gap:16px;cursor:pointer;transition:all .18s}
+.choice-card.green{background:#7fff00}.choice-card.green:hover{background:#9fff33}
+.choice-card.dark{background:#1a1f1a;border:1px solid #2a2f2a}.choice-card.dark:hover{background:#222722}
+.choice-card-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.choice-card.green .choice-card-icon{background:#000000aa}
+.choice-card.dark .choice-card-icon{background:#1a3a3a}
+.choice-card-icon i{font-size:22px}
+.choice-card.green .choice-card-icon i{color:#7fff00}
+.choice-card.dark .choice-card-icon i{color:#4dd9d9}
+.top-label{font-size:11px;font-weight:700;letter-spacing:1px;opacity:0.7}
+.choice-card.green .top-label{color:#000}
+.choice-card.dark .top-label{color:#888}
+.main-label{font-size:20px;font-weight:800}
+.choice-card.green .main-label{color:#000}
+.choice-card.dark .main-label{color:#fff}
+
+/* LANGUAGE */
+#s-lang{background:#0a0f0a;padding-bottom:100px}
+.lang-hint{font-size:13px;color:#888;padding:10px 20px 16px}
+.lang-list{display:flex;flex-direction:column;gap:8px;padding:0 20px}
+.lang-row{background:#141914;border:1px solid #1e231e;border-radius:14px;padding:16px 18px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:all .18s}
+.lang-row:hover{border-color:#3a4a3a}
+.lang-row.selected{background:#1a2e1a;border-color:#7fff00}
+.lang-native{font-size:18px;font-weight:700;color:#fff}
+.lang-eng{font-size:12px;color:#888;margin-top:2px}
+.lang-tick{width:28px;height:28px;background:#7fff00;border-radius:50%;display:none;align-items:center;justify-content:center}
+.lang-row.selected .lang-tick{display:flex}
+.lang-tick i{font-size:14px;color:#000}
+.lang-tick-empty{width:28px;height:28px;border:1.5px solid #333;border-radius:50%}
+.lang-row.selected .lang-tick-empty{display:none}
+.bottom-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:420px;padding:16px 20px 28px;background:linear-gradient(to top,#0a0f0a 70%,transparent);z-index:10}
+
+
+/* CITY SELECTION */
+#s-city{background:#0a0f0a;padding-bottom:100px}
+.city-search-box{background:#141914;border:1px solid #1e231e;border-radius:14px;display:flex;align-items:center;gap:10px;padding:12px 16px;margin:10px 16px 14px}
+.city-search-box i{font-size:16px;color:#555}
+.city-search-box input{background:transparent;border:none;color:#fff;font-size:14px;outline:none;flex:1}
+.city-search-box input::placeholder{color:#555}
+.city-card-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px}
+.city-card{background:#141914;border:1.5px solid #1e231e;border-radius:16px;padding:14px 10px 12px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;transition:all .2s;position:relative}
+.city-card:hover{border-color:#3a5a3a;background:#181e18}
+.city-card.selected{background:#131f13;border-color:#7fff00}
+.city-card.selected .city-name{color:#7fff00}
+.city-card.hidden{display:none}
+.city-monument{width:60px;height:48px;display:flex;align-items:center;justify-content:center}
+.city-card.selected .city-monument{color:#7fff00}
+.city-card:not(.selected) .city-monument{color:#4a6a4a}
+.city-monument svg{width:60px;height:48px}
+.city-name{font-size:13px;font-weight:700;color:#ccc;text-align:center;line-height:1.2}
+.city-state{font-size:10px;color:#555;text-align:center;margin-top:1px}
+.city-card.selected::after{content:"✓";position:absolute;top:8px;right:10px;font-size:11px;color:#7fff00;font-weight:800}
+/* PHONE */
+#s-phone{background:#0a0f0a;padding:0 0 100px}
+.phone-card{background:#141914;border:1px solid #1e231e;border-radius:18px;margin:20px;padding:24px}
+.phone-card-label{font-size:11px;font-weight:700;letter-spacing:1.2px;color:#888;margin-bottom:14px}
+.phone-input-row{background:#0e130e;border:1px solid #2a2f2a;border-radius:12px;display:flex;align-items:center;overflow:hidden;margin-bottom:16px}
+.phone-prefix{padding:14px;font-size:15px;font-weight:700;color:#fff;border-right:1px solid #2a2f2a;display:flex;align-items:center;gap:6px}
+.phone-prefix i{font-size:16px;color:#7fff00}
+.phone-real-input{flex:1;background:transparent;border:none;color:#fff;font-size:15px;padding:14px;outline:none}
+.phone-real-input::placeholder{color:#444}
+.secure-note{display:flex;align-items:center;justify-content:center;gap:6px;font-size:12px;color:#666;margin-top:12px}
+.secure-note i{font-size:14px;color:#7fff00}
+
+/* OTP */
+#s-otp{background:#0a0f0a;padding:0 0 100px}
+.otp-card{background:#141914;border:1px solid #1e231e;border-radius:18px;margin:20px;padding:24px}
+.otp-card-title{font-size:16px;font-weight:700;margin-bottom:4px}
+.otp-card-sub{font-size:13px;color:#888;margin-bottom:20px}
+.otp-boxes{display:flex;gap:10px;justify-content:center;margin-bottom:20px}
+.otp-b{width:56px;height:60px;background:#0e130e;border:1.5px solid #2a2f2a;border-radius:12px;text-align:center;font-size:24px;font-weight:700;color:#fff;outline:none;transition:border-color .18s}
+.otp-b:focus{border-color:#7fff00;background:#111811}
+.resend-row{text-align:center;font-size:13px;color:#666}
+.resend-link{color:#7fff00;cursor:pointer;font-weight:600}
+
+/* REGION */
+.search-box{background:#141914;border:1px solid #1e231e;border-radius:14px;display:flex;align-items:center;gap:10px;padding:13px 16px;margin:14px 20px 16px}
+.search-box i{font-size:16px;color:#555}
+.search-box input{background:transparent;border:none;color:#fff;font-size:14px;outline:none;flex:1}
+.search-box input::placeholder{color:#555}
+.city-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 20px}
+.city-btn{background:#141914;border:1px solid #1e231e;border-radius:12px;padding:14px 16px;font-size:14px;font-weight:600;color:#fff;cursor:pointer;transition:all .18s;text-align:left}
+.city-btn:hover{border-color:#3a4a3a}
+.city-btn.selected{background:#1a2e1a;border-color:#7fff00;color:#7fff00}
+
+/* PROFILE */
+#s-profile{background:#0a0f0a;padding:0 20px 120px;overflow-y:auto}
+.av-wrap{text-align:center;padding:20px 0 10px}
+.av-circle{width:88px;height:88px;border-radius:50%;background:#141914;border:2px dashed #2a4a2a;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;overflow:hidden;transition:all .18s}
+.av-circle:hover{border-color:#7fff00}
+.av-circle i{font-size:28px;color:#3a5a3a}
+.av-sub{font-size:10px;color:#3a5a3a;margin-top:3px;font-weight:600}
+.av-circle img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;display:none;z-index:3}
+.field-label{font-size:11px;font-weight:700;letter-spacing:1px;color:#888;margin-bottom:8px;margin-top:14px}
+.field-inp{width:100%;background:#141914;border:1px solid #1e231e;border-radius:12px;padding:13px 16px;font-size:14px;color:#fff;outline:none;transition:border-color .18s}
+.field-inp:focus{border-color:#7fff00}
+.field-inp::placeholder{color:#444}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* ═══════════════════════════════════════
+   KYC DASHBOARD
+═══════════════════════════════════════ */
+#s-kyc{background:#0a0f0a;overflow-y:auto;padding-bottom:40px}
+
+/* Cyan header */
+.kyc-cyan-header{background:#00e5ff;border-radius:18px;margin:16px;padding:20px 22px}
+.kyc-hi{font-size:12px;font-weight:700;letter-spacing:1.5px;color:#004455;margin-bottom:6px}
+.kyc-headline{font-size:22px;font-weight:900;color:#000;line-height:1.25;margin-bottom:4px}
+.kyc-headline-sub{font-size:13px;color:#005566}
+.kyc-pbar-bg{background:#00c4d944;border-radius:4px;height:5px;overflow:hidden;margin-top:14px}
+.kyc-pbar-fill{height:5px;background:#000;border-radius:4px;transition:width .4s}
+.kyc-pbar-row{display:flex;justify-content:space-between;font-size:11px;color:#006677;margin-top:5px}
+
+/* Section labels */
+.section-lbl{font-size:11px;font-weight:700;letter-spacing:1.4px;color:#666;padding:18px 20px 10px}
+
+/* Phone verified row */
+.phone-done-row{background:#141914;border:1px solid #1e231e;border-radius:14px;margin:0 16px 10px;padding:16px 18px;display:flex;align-items:center;gap:14px}
+.icon-box{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.icon-box i{font-size:20px}
+.row-info{flex:1}
+.row-title{font-size:14px;font-weight:700;color:#fff}
+.row-sub{font-size:12px;color:#666;margin-top:2px}
+.verified-pill{background:#0d2e0d;color:#7fff00;border-radius:20px;padding:4px 12px;font-size:11px;font-weight:700;display:flex;align-items:center;gap:4px}
+.verified-pill i{font-size:11px}
+
+/* Personal info card — before fill: shows as neon-green card */
+.personal-card{border-radius:14px;margin:0 16px 10px;padding:16px 18px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:all .18s}
+.personal-card.unfilled{background:#141914;border:1px solid #2a2f2a}
+.personal-card.unfilled:hover{border-color:#7fff00}
+.personal-card.filled{background:#b8ff2e;border:none;cursor:default}
+.personal-card.filled .row-title{color:#000}
+.personal-card.filled .row-sub{color:#3a5a00}
+.personal-card.filled .icon-box{background:#0000001a}
+.personal-card.filled .icon-box i{color:#000}
+.personal-card.unfilled .icon-box{background:#1e231e}
+.personal-card.unfilled .icon-box i{color:#888}
+.personal-card-right{display:flex;align-items:center;gap:8px}
+.fill-pill-personal{background:#1a2e1a;border:1px solid #7fff00;color:#7fff00;border-radius:20px;padding:4px 14px;font-size:11px;font-weight:700}
+.done-tick{width:30px;height:30px;background:#2d9b2d;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.done-tick i{font-size:15px;color:#fff}
+.edit-sm{background:#0000001a;border:none;border-radius:8px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.edit-sm i{font-size:14px;color:#000}
+
+/* ─── KYC DOCUMENT CARDS ─── */
+/* Locked state (before personal done) */
+.kyc-doc-card{border-radius:14px;margin:0 16px 10px;padding:16px 18px;display:flex;align-items:center;gap:14px;transition:all .18s}
+.kyc-doc-card.state-locked{background:#141914;border:1px solid #1e231e;opacity:0.5;cursor:not-allowed}
+/* Unlocked / Please Fill state */
+.kyc-doc-card.state-fill{background:#1c1c1c;border:1px solid #2a2a2a;cursor:pointer}
+.kyc-doc-card.state-fill:hover{border-color:#b87a00}
+/* Completed state */
+.kyc-doc-card.state-done{background:#141914;border:1px solid #2a3a2a;cursor:pointer}
+.kyc-doc-card.state-done:hover{border-color:#7fff00}
+
+/* Icon boxes — each KYC doc has its own color */
+.ib-aadhar{background:#1a2840}
+.ib-aadhar i{color:#4a9eff}
+.ib-pan{background:#2a1f10}
+.ib-pan i{color:#e8943a}
+.ib-dl{background:#2a1020}
+.ib-dl i{color:#e05588}
+.ib-bank{background:#102a18}
+.ib-bank i{color:#4ccc7a}
+.ib-upi{background:#1a1040}
+.ib-upi i{color:#8877ee}
+
+/* Right side elements */
+.please-fill-pill{background:#8B5500;color:#ffcc66;border-radius:20px;padding:5px 14px;font-size:11px;font-weight:800;letter-spacing:0.5px;white-space:nowrap}
+.locked-label{display:flex;align-items:center;gap:5px;font-size:12px;color:#555;font-weight:600}
+.locked-label i{font-size:13px}
+.done-right{display:flex;align-items:center;gap:8px}
+.done-tick-sm{width:26px;height:26px;background:#2d9b2d;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.done-tick-sm i{font-size:12px;color:#fff}
+.edit-doc{background:#1e231e;border:none;border-radius:8px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.edit-doc i{font-size:12px;color:#7fff00}
+
+/* ─── PAYMENT CARDS ─── */
+/* Payment always locked until all KYC done */
+.pay-card{border-radius:14px;margin:0 16px 10px;padding:16px 18px;display:flex;align-items:center;gap:14px;transition:all .18s}
+.pay-card.state-locked{background:#141914;border:1px solid #1e231e;opacity:0.5;cursor:not-allowed}
+.pay-card.state-fill{background:#1c1c1c;border:1px solid #2a2a2a;cursor:pointer}
+.pay-card.state-fill:hover{border-color:#b87a00}
+.pay-card.state-done{background:#141914;border:1px solid #2a3a2a;cursor:pointer}
+.pay-card.state-done:hover{border-color:#7fff00}
+
+/* Lock notice bar */
+.lock-notice{background:#141914;border:1px dashed #333;border-radius:12px;margin:0 16px 10px;padding:13px 16px;display:flex;align-items:center;gap:10px}
+.lock-notice i{font-size:15px;color:#555;flex-shrink:0}
+.lock-notice span{font-size:12px;color:#555;line-height:1.5}
+
+/* ── INLINE SVG ICONS ── */
+i.svg-icon{display:inline-flex;align-items:center;justify-content:center;line-height:1;vertical-align:middle;flex-shrink:0;width:1em;height:1em;font-size:inherit}
+i.svg-icon svg{display:block}
+/* Hide the broken nested duplicate SVGs — only the first child svg should render */
+i.svg-icon svg svg{display:none!important}
+/* Also hide broken path>svg duplicates */
+path>svg,circle>svg,rect>svg,line>svg,polyline>svg,polygon>svg,ellipse>svg{display:none!important}
+.topbar-back i.svg-icon svg{width:20px;height:20px;stroke:currentColor}
+.btn-neon i.svg-icon svg{width:18px;height:18px}
+.topbar-icon.svg-icon svg{width:18px;height:18px}
+.choice-card-icon i.svg-icon svg{width:22px;height:22px;stroke:currentColor}
+.logo-box i.svg-icon svg{width:46px;height:46px;stroke:#000}
+.lang-tick i.svg-icon svg{width:14px;height:14px;stroke:#000;stroke-width:3}
+.verified-pill i.svg-icon svg{width:13px;height:13px}
+.icon-box i.svg-icon svg{width:20px;height:20px}
+.sheet-close i.svg-icon svg{width:16px;height:16px}
+.done-tick i.svg-icon svg{width:14px;height:14px;stroke:#fff}
+.done-tick-sm i.svg-icon svg{width:12px;height:12px;stroke:#fff}
+.edit-sm i.svg-icon svg{width:13px;height:13px}
+.edit-doc i.svg-icon svg{width:12px;height:12px;stroke:#7fff00}
+.secure-note i.svg-icon svg{width:14px;height:14px}
+.lock-notice i.svg-icon svg{width:15px;height:15px}
+.locked-label i.svg-icon svg{width:13px;height:13px}
+.uz-icon.svg-icon svg{width:26px;height:26px}
+.sheet-save-btn i.svg-icon svg{width:17px;height:17px}
+.city-search-box i.svg-icon svg{width:15px;height:15px}
+.search-box i.svg-icon svg{width:15px;height:15px}
+.phone-prefix i.svg-icon svg{width:16px;height:16px;stroke:#7fff00;flex-shrink:0}
+.av-circle i.svg-icon svg{width:28px;height:28px;stroke:#3a5a3a}
+.fill-pill-personal{display:flex;align-items:center}
+
+/* ── BOTTOM SHEET ── */
+#sheet-overlay{display:none;position:fixed;inset:0;background:#000000cc;z-index:100;transition:opacity .25s}
+#sheet-overlay.open{display:block}
+#detail-sheet{position:fixed;bottom:0;left:50%;transform:translateX(-50%) translateY(100%);width:100%;max-width:420px;background:#141914;border-radius:24px 24px 0 0;z-index:101;transition:transform .32s cubic-bezier(.22,.7,.36,1);max-height:88vh;overflow-y:auto;padding-bottom:20px}
+#detail-sheet.open{transform:translateX(-50%) translateY(0)}
+.sheet-handle{width:40px;height:4px;background:#333;border-radius:2px;margin:14px auto 0}
+.sheet-header{display:flex;align-items:center;gap:14px;padding:16px 20px 14px}
+.sheet-icon-wrap{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sheet-header-text{flex:1}
+.sheet-title{font-size:17px;font-weight:800;color:#fff}
+.sheet-subtitle{font-size:12px;color:#666;margin-top:2px}
+.sheet-close{background:#1e231e;border:none;border-radius:10px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#888;flex-shrink:0}
+.sheet-close:hover{color:#fff;background:#2a2f2a}
+.sheet-close i{font-size:16px}
+.sheet-field-group{padding:0 20px;margin-bottom:14px}
+.sheet-field-label{font-size:11px;font-weight:700;letter-spacing:1px;color:#888;margin-bottom:7px;text-transform:uppercase}
+.sheet-inp{width:100%;background:#0e130e;border:1.5px solid #1e231e;border-radius:12px;padding:13px 16px;font-size:14px;color:#fff;outline:none;transition:border-color .18s;font-family:inherit}
+.sheet-inp:focus{border-color:#7fff00;background:#0d160d}
+.sheet-inp::placeholder{color:#444}
+.sheet-field-hint{font-size:11px;color:#555;margin-top:5px;padding-left:2px}
+.sheet-divider{display:flex;align-items:center;gap:10px;padding:6px 20px 14px;font-size:11px;font-weight:700;letter-spacing:1px;color:#555;text-transform:uppercase}
+.sheet-divider::before,.sheet-divider::after{content:'';flex:1;height:1px;background:#1e231e}
+/* upload zone */
+.upload-zone{background:#0e130e;border:1.5px dashed #2a2f2a;border-radius:14px;padding:0;height:100px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .18s;overflow:hidden;position:relative}
+.upload-zone:hover{border-color:#7fff00;background:#0d160d}
+.uz-inner{display:flex;flex-direction:column;align-items:center;gap:5px;padding:16px;position:relative;z-index:1;width:100%;pointer-events:none}
+.uz-icon{font-size:28px;color:#3a5a3a}
+.uz-text{font-size:13px;font-weight:600;color:#666}
+.uz-text.uz-done{color:#7fff00}
+.uz-hint{font-size:11px;color:#444}
+/* preview image inside zone */
+.upload-zone img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:12px}
+.upload-zone .uz-badge{position:absolute;bottom:6px;right:8px;background:#000a;border-radius:8px;padding:3px 8px;font-size:10px;color:#7fff00;font-weight:700}
+/* save button */
+.sheet-save-btn{width:calc(100% - 40px);margin:6px 20px 0;background:#7fff00;color:#000;border:none;border-radius:14px;padding:15px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .18s;font-family:inherit}
+.sheet-save-btn:hover{background:#9fff33}
+.sheet-save-btn.btn-disabled{background:#2a2f2a;color:#555;cursor:not-allowed}
+.sheet-save-btn.btn-disabled:hover{background:#2a2f2a;transform:none}
+.sheet-upload-warning{text-align:center;font-size:12px;color:#e05555;padding:8px 20px 0;font-weight:600}
+.req-hint{font-size:11px;color:#e05555;margin-top:5px;padding-left:2px;font-weight:600}
+.field-error{font-size:11px;color:#e05555;margin-top:5px;padding-left:2px;min-height:14px;display:none}
+.sheet-inp.inp-error{border-color:#e05555!important;background:#1a0f0f}
+.sheet-inp.inp-ok{border-color:#7fff00!important}
+.uz-filled{border-color:#7fff00 !important}
+.sheet-save-btn i{font-size:17px}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- SPLASH -->
+<div class="screen active" id="s-splash">
+  <div class="splash-top">
+    <div class="logo-box"><i class="svg-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5z"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5z"/><path d="M5 3l.75 2.25L8 6l-2.25.75L5 9l-.75-2.25L2 6l2.25-.75z"/><path d="M19 15l.75 2.25L22 18l-2.25.75L19 21l-.75-2.25L16 18l2.25-.75z"/></svg></i><path d="M5 3l.75 2.25L8 6l-2.25.75L5 9l-.75-2.25L2 6l2.25-.75z"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5z"/><path d="M5 3l.75 2.25L8 6l-2.25.75L5 9l-.75-2.25L2 6l2.25-.75z"/><path d="M19 15l.75 2.25L22 18l-2.25.75L19 21l-.75-2.25L16 18l2.25-.75z"/></svg></i><path d="M19 15l.75 2.25L22 18l-2.25.75L19 21l-.75-2.25L16 18l2.25-.75z"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5z"/><path d="M5 3l.75 2.25L8 6l-2.25.75L5 9l-.75-2.25L2 6l2.25-.75z"/><path d="M19 15l.75 2.25L22 18l-2.25.75L19 21l-.75-2.25L16 18l2.25-.75z"/></svg></i></svg></i></div>
+    <div style="text-align:center">
+      <div class="splash-label">WELCOME</div>
+      <div class="splash-brand">Brand <span>Name</span></div>
+      <div class="splash-sub">Tap to begin</div>
+    </div>
+  </div>
+  <button class="btn-neon" onclick="go('s-choice')">Get Started <i class="svg-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></i></svg></i></button>
+</div>
+
+<!-- CHOICE -->
+<div class="screen" id="s-choice">
+  <div style="position:absolute;top:16px;left:20px">
+    <button class="topbar-back" onclick="go('s-splash')"><i class="svg-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></i></svg></i> Back</button>
+  </div>
+  <div class="choice-top" style="padding-top:80px">
+    <div class="choice-title" data-key="welcome">Welcome</div>
+    <div class="choice-sub" data-key="tap_begin">Tap to begin</div>
+  </div>
+  <div style="flex:1"></div>
+  <div class="choice-cards" style="padding:0 24px 48px">
+    <div class="choice-card green" onclick="go('s-lang')">
+      <div class="choice-card-icon"><i class="svg-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="8" r="4"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="8" r="4"/><path d="M3 20c0-3.9 3.1-7 7-7"/><line x1="19" y1="12" x2="19" y2="18"/><line x1="16" y1="15" x2="22" y2="15"/></svg></i><path d="M3 20c0-3.9 3.1-7 7-7"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="8" r="4"/><path d="M3 20c0-3.9 3.1-7 7-7"/><line x1="19" y1="12" x2="19" y2="18"/><line x1="16" y1="15" x2="22" y2="15"/></svg></i><line x1="19" y1="12" x2="19" y2="18"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="8" r="4"/><path d="M3 20c0-3.9 3.1-7 7-7"/><line x1="19" y1="12" x2="19" y2="18"/><line x1="16" y1="15" x2="22" y2="15"/></svg></i><line x1="16" y1="15" x2="22" y2="15"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="8" r="4"/><path d="M3 20c0-3.9 3.1-7 7-7"/><line x1="19" y1="12" x2="19" y2="18"/><line x1="16" y1="15" x2="22" y2="15"/></svg></i></svg></i></div>
+      <div class="choice-card-text">
+        <div class="top-label">NEW HERE?</div>
+        <div class="main-label" data-key="sign_up">Sign Up</div>
+      </div>
+    </div>
+    <div class="choice-card dark" onclick="go('s-login-phone')">
+      <div class="choice-card-icon"><i class="svg-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg></i><polyline points="10 17 15 12 10 7"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg></i><line x1="15" y1="12" x2="3" y2="12"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg></i></svg></i></div>
+      <div class="choice-card-text">
+        <div class="top-label">ALREADY HAVE AN ACCOUNT?</div>
+        <div class="main-label" data-key="log_in">Log In</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LANGUAGE -->
+<div class="screen" id="s-lang">
+  <div class="topbar">
+    <button class="topbar-back" onclick="go('s-choice')"><i class="svg-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></i></svg></i> Back</button>
+    <i class="svg-icon topbar-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h7M9 3v2c0 4.418-2.239 8-5 8"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h7M9 3v2c0 4.418-2.239 8-5 8"/><path d="M5 9c0 2.144 2.952 3.908 6.7 4"/><path d="M12 20l4-9 4 9m-1.5-3.5h-5"/></svg></i><path d="M5 9c0 2.144 2.952 3.908 6.7 4"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h7M9 3v2c0 4.418-2.239 8-5 8"/><path d="M5 9c0 2.144 2.952 3.908 6.7 4"/><path d="M12 20l4-9 4 9m-1.5-3.5h-5"/></svg></i><path d="M12 20l4-9 4 9m-1.5-3.5h-5"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h7M9 3v2c0 4.418-2.239 8-5 8"/><path d="M5 9c0 2.144 2.952 3.908 6.7 4"/><path d="M12 20l4-9 4 9m-1.5-3.5h-5"/></svg></i></svg></i>
+    <div><div class="topbar-title" data-key="choose_language">Choose your language</div></div>
+  </div>
+  <div class="lang-hint" data-key="lang_hint">You can change this later in settings</div>
+  <div class="lang-list">
+    <div class="lang-row selected" onclick="selectLang('en',this)">
+      <div><div class="lang-native">English</div><div class="lang-eng">English</div></div>
+      <div class="lang-tick-empty"></div><div class="lang-tick"><i class="svg-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></i></svg></i></div>
+    </div>
+    <div class="lang-row" onclick="selectLang('hi',this)">
+      <div><div class="lang-native">हिन्दी</div><div class="lang-eng">Hindi</div></div>
+      <div class="lang-tick-empty"></div><div class="lang-tick"><i class="svg-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></i></svg></i></div>
+    </div>
+    <div class="lang-row" onclick="selectLang('te',this)">
+      <div><div class="lang-native">తెలుగు</div><div class="lang-eng">Telugu</div></div>
+      <div class="lang-tick-empty"></div><div class="lang-tick"><i class="svg-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></i></svg></i></div>
+    </div>
+    <div class="lang-row" onclick="selectLang('ta',this)">
+      <div><div class="lang-native">தமிழ்</div><div class="lang-eng">Tamil</div></div>
+      <div class="lang-tick-empty"></div><div class="lang-tick"><i class="svg-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></i></svg></i></div>
+    </div>
+    <div class="lang-row" onclick="selectLang('kn',this)">
+      <div><div class="lang-native">ಕನ್ನಡ</div><div class="lang-eng">Kannada</div></div>
+      <div class="lang-tick-empty"></div><div class="lang-tick"><i class="svg-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></i></svg></i></div>
+    </div>
+    <div class="lang-row" onclick="selectLang('ml',this)">
+      <div><div class="lang-native">മലയാളം</div><div class="lang-eng">Malayalam</div></div>
+      <div class="lang-tick-empty"></div><div class="lang-tick"><i class="svg-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></i></svg></i></div>
+    </div>
+  </div>
+  <div class="bottom-bar"><button class="btn-neon" onclick="go('s-city')"><span data-key="continue">Continue</span></button></div>
+</div>
+
+<!-- CITY SELECTION -->
+<div class="screen" id="s-city">
+  <div class="topbar">
+    <button class="topbar-back" onclick="go('s-lang')"><i class="svg-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></i></svg></i> Back</button>
+    <i class="svg-icon topbar-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21c-4-4-7-7.5-7-11a7 7 0 1 1 14 0c0 3.5-3 7-7 11z"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21c-4-4-7-7.5-7-11a7 7 0 1 1 14 0c0 3.5-3 7-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></i><circle cx="12" cy="10" r="2.5"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21c-4-4-7-7.5-7-11a7 7 0 1 1 14 0c0 3.5-3 7-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></i></svg></i>
+    <div>
+      <div class="topbar-title" data-key="select_city">Select your city</div>
+      <div class="topbar-sub" data-key="city_sub">We'll show gigs near you</div>
+    </div>
+  </div>
+  <div class="city-search-box">
+    <i class="svg-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg></i><line x1="16.5" y1="16.5" x2="22" y2="22"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg></i></svg></i>
+    <input type="text" id="city-search-inp" placeholder="Search city…" oninput="filterCities(this.value)" data-ph-key="search_city"/>
+  </div>
+  <div class="city-card-grid" id="city-card-grid">
+
+    <!-- Hyderabad -->
+    <div class="city-card selected" onclick="selectCityCard(this)" data-city="Hyderabad">
+      <div class="city-monument">
+        <svg viewBox="0 0 80 64" xmlns="http://www.w3.org/2000/svg">
+          <!-- Charminar -->
+          <rect x="28" y="30" width="24" height="28" rx="1" fill="currentColor" opacity=".18"/>
+          <rect x="33" y="20" width="4" height="38" rx="1" fill="currentColor" opacity=".7"/>
+          <rect x="43" y="20" width="4" height="38" rx="1" fill="currentColor" opacity=".7"/>
+          <rect x="28" y="30" width="24" height="6" rx="1" fill="currentColor" opacity=".55"/>
+          <ellipse cx="35" cy="20" rx="3.5" ry="5" fill="currentColor" opacity=".85"/>
+          <ellipse cx="45" cy="20" rx="3.5" ry="5" fill="currentColor" opacity=".85"/>
+          <rect x="34" y="4" width="2" height="16" rx="1" fill="currentColor"/>
+          <rect x="44" y="4" width="2" height="16" rx="1" fill="currentColor"/>
+          <ellipse cx="35" cy="4" rx="2" ry="3" fill="currentColor"/>
+          <ellipse cx="45" cy="4" rx="2" ry="3" fill="currentColor"/>
+          <rect x="34" y="36" width="12" height="22" rx="1" fill="currentColor" opacity=".3"/>
+          <rect x="37" y="40" width="6" height="10" rx="1" fill="currentColor" opacity=".5"/>
+        </svg>
+      </div>
+      <div class="city-name" data-key="city_hyd">Hyderabad</div>
+      <div class="city-state">Telangana</div>
+    </div>
+
+    <!-- Bengaluru -->
+    <div class="city-card" onclick="selectCityCard(this)" data-city="Bengaluru">
+      <div class="city-monument">
+        <svg viewBox="0 0 80 64" xmlns="http://www.w3.org/2000/svg">
+          <!-- Vidhana Soudha style dome -->
+          <rect x="20" y="38" width="40" height="18" rx="1" fill="currentColor" opacity=".2"/>
+          <rect x="24" y="32" width="32" height="10" rx="1" fill="currentColor" opacity=".35"/>
+          <rect x="28" y="24" width="24" height="10" rx="1" fill="currentColor" opacity=".5"/>
+          <ellipse cx="40" cy="22" rx="12" ry="6" fill="currentColor" opacity=".65"/>
+          <ellipse cx="40" cy="17" rx="7" ry="5" fill="currentColor" opacity=".8"/>
+          <rect x="38" y="6" width="4" height="12" rx="1" fill="currentColor"/>
+          <ellipse cx="40" cy="6" rx="3" ry="3" fill="currentColor"/>
+          <!-- columns -->
+          <rect x="26" y="34" width="3" height="22" rx="1" fill="currentColor" opacity=".6"/>
+          <rect x="33" y="34" width="3" height="22" rx="1" fill="currentColor" opacity=".6"/>
+          <rect x="44" y="34" width="3" height="22" rx="1" fill="currentColor" opacity=".6"/>
+          <rect x="51" y="34" width="3" height="22" rx="1" fill="currentColor" opacity=".6"/>
+        </svg>
+      </div>
+      <div class="city-name">Bengaluru</div>
+      <div class="city-state">Karnataka</div>
+    </div>
+
+    <!-- Mumbai -->
+    <div class="city-card" onclick="selectCityCard(this)" data-city="Mumbai">
+      <div class="city-monument">
+        <svg viewBox="0 0 80 64" xmlns="http://www.w3.org/2000/svg">
+          <!-- Gateway of India -->
+          <rect x="22" y="28" width="36" height="28" rx="1" fill="currentColor" opacity=".15"/>
+          <rect x="22" y="28" width="10" height="28" rx="1" fill="currentColor" opacity=".45"/>
+          <rect x="48" y="28" width="10" height="28" rx="1" fill="currentColor" opacity=".45"/>
+          <rect x="32" y="36" width="16" height="20" rx="1" fill="currentColor" opacity=".15"/>
+          <!-- arch -->
+          <path d="M32 36 Q40 18 48 36" fill="none" stroke="currentColor" stroke-width="3" opacity=".8"/>
+          <!-- dome on top -->
+          <ellipse cx="40" cy="20" rx="8" ry="6" fill="currentColor" opacity=".7"/>
+          <rect x="38" y="8" width="4" height="14" rx="1" fill="currentColor"/>
+          <ellipse cx="40" cy="8" rx="3" ry="3" fill="currentColor"/>
+          <rect x="24" y="20" width="4" height="8" rx="1" fill="currentColor" opacity=".55"/>
+          <rect x="52" y="20" width="4" height="8" rx="1" fill="currentColor" opacity=".55"/>
+        </svg>
+      </div>
+      <div class="city-name">Mumbai</div>
+      <div class="city-state">Maharashtra</div>
+    </div>
+
+    <!-- Delhi -->
+    <div class="city-card" onclick="selectCityCard(this)" data-city="Delhi NCR">
+      <div class="city-monument">
+        <svg viewBox="0 0 80 64" xmlns="http://www.w3.org/2000/svg">
+          <!-- India Gate -->
+          <rect x="30" y="20" width="20" height="36" rx="1" fill="currentColor" opacity=".15"/>
+          <rect x="30" y="20" width="6" height="36" rx="1" fill="currentColor" opacity=".55"/>
+          <rect x="44" y="20" width="6" height="36" rx="1" fill="currentColor" opacity=".55"/>
+          <!-- arch -->
+          <path d="M36 28 Q40 10 44 28" fill="none" stroke="currentColor" stroke-width="3.5" opacity=".9"/>
+          <rect x="28" y="20" width="24" height="5" rx="1" fill="currentColor" opacity=".7"/>
+          <rect x="30" y="52" width="20" height="4" rx="1" fill="currentColor" opacity=".55"/>
+          <!-- flame -->
+          <ellipse cx="40" cy="38" rx="2" ry="3" fill="currentColor" opacity=".9"/>
+          <path d="M39 36 Q40 30 41 36" fill="currentColor" opacity=".6"/>
+        </svg>
+      </div>
+      <div class="city-name">Delhi NCR</div>
+      <div class="city-state">Delhi</div>
+    </div>
+
+    <!-- Chennai -->
+    <div class="city-card" onclick="selectCityCard(this)" data-city="Chennai">
+      <div class="city-monument">
+        <svg viewBox="0 0 80 64" xmlns="http://www.w3.org/2000/svg">
+          <!-- Kapaleeshwarar Gopuram -->
+          <rect x="32" y="38" width="16" height="18" rx="1" fill="currentColor" opacity=".25"/>
+          <rect x="30" y="32" width="20" height="8" rx="1" fill="currentColor" opacity=".4"/>
+          <rect x="32" y="26" width="16" height="8" rx="1" fill="currentColor" opacity=".5"/>
+          <rect x="34" y="20" width="12" height="8" rx="1" fill="currentColor" opacity=".6"/>
+          <rect x="36" y="14" width="8" height="8" rx="1" fill="currentColor" opacity=".72"/>
+          <rect x="37" y="8" width="6" height="8" rx="1" fill="currentColor" opacity=".85"/>
+          <rect x="38" y="3" width="4" height="7" rx="1" fill="currentColor"/>
+          <!-- tier lines -->
+          <rect x="30" y="32" width="20" height="1.5" fill="currentColor" opacity=".5"/>
+          <rect x="32" y="26" width="16" height="1.5" fill="currentColor" opacity=".5"/>
+          <rect x="34" y="20" width="12" height="1.5" fill="currentColor" opacity=".5"/>
+          <rect x="36" y="14" width="8" height="1.5" fill="currentColor" opacity=".5"/>
+        </svg>
+      </div>
+      <div class="city-name">Chennai</div>
+      <div class="city-state">Tamil Nadu</div>
+    </div>
+
+    <!-- Kolkata -->
+    <div class="city-card" onclick="selectCityCard(this)" data-city="Kolkata">
+      <div class="city-monument">
+        <svg viewBox="0 0 80 64" xmlns="http://www.w3.org/2000/svg">
+          <!-- Victoria Memorial dome -->
+          <rect x="18" y="40" width="44" height="16" rx="1" fill="currentColor" opacity=".2"/>
+          <rect x="22" y="34" width="36" height="8" rx="1" fill="currentColor" opacity=".35"/>
+          <ellipse cx="40" cy="30" rx="14" ry="8" fill="currentColor" opacity=".5"/>
+          <ellipse cx="40" cy="24" rx="9" ry="7" fill="currentColor" opacity=".65"/>
+          <ellipse cx="40" cy="18" rx="5" ry="5" fill="currentColor" opacity=".8"/>
+          <rect x="38" y="6" width="4" height="14" rx="1" fill="currentColor"/>
+          <ellipse cx="40" cy="6" rx="3" ry="3" fill="currentColor"/>
+          <!-- side turrets -->
+          <ellipse cx="26" cy="34" rx="4" ry="6" fill="currentColor" opacity=".55"/>
+          <ellipse cx="54" cy="34" rx="4" ry="6" fill="currentColor" opacity=".55"/>
+          <rect x="24.5" y="22" width="3" height="12" rx="1" fill="currentColor" opacity=".5"/>
+          <rect x="52.5" y="22" width="3" height="12" rx="1" fill="currentColor" opacity=".5"/>
+        </svg>
+      </div>
+      <div class="city-name">Kolkata</div>
+      <div class="city-state">West Bengal</div>
+    </div>
+
+    <!-- Pune -->
+    <div class="city-card" onclick="selectCityCard(this)" data-city="Pune">
+      <div class="city-monument">
+        <svg viewBox="0 0 80 64" xmlns="http://www.w3.org/2000/svg">
+          <!-- Shaniwar Wada fort -->
+          <rect x="16" y="30" width="48" height="26" rx="1" fill="currentColor" opacity=".15"/>
+          <rect x="16" y="26" width="48" height="6" rx="2" fill="currentColor" opacity=".35"/>
+          <!-- battlements -->
+          <rect x="17" y="20" width="5" height="8" rx="1" fill="currentColor" opacity=".55"/>
+          <rect x="25" y="20" width="5" height="8" rx="1" fill="currentColor" opacity=".55"/>
+          <rect x="33" y="20" width="5" height="8" rx="1" fill="currentColor" opacity=".55"/>
+          <rect x="41" y="20" width="5" height="8" rx="1" fill="currentColor" opacity=".55"/>
+          <rect x="49" y="20" width="5" height="8" rx="1" fill="currentColor" opacity=".55"/>
+          <rect x="57" y="20" width="5" height="8" rx="1" fill="currentColor" opacity=".55"/>
+          <!-- gate arch -->
+          <rect x="34" y="34" width="12" height="22" rx="1" fill="currentColor" opacity=".2"/>
+          <path d="M34 40 Q40 28 46 40" fill="none" stroke="currentColor" stroke-width="2.5" opacity=".8"/>
+          <!-- towers -->
+          <rect x="16" y="10" width="8" height="22" rx="1" fill="currentColor" opacity=".5"/>
+          <rect x="56" y="10" width="8" height="22" rx="1" fill="currentColor" opacity=".5"/>
+          <ellipse cx="20" cy="10" rx="4" ry="3" fill="currentColor" opacity=".7"/>
+          <ellipse cx="60" cy="10" rx="4" ry="3" fill="currentColor" opacity=".7"/>
+        </svg>
+      </div>
+      <div class="city-name">Pune</div>
+      <div class="city-state">Maharashtra</div>
+    </div>
+
+    <!-- Ahmedabad -->
+    <div class="city-card" onclick="selectCityCard(this)" data-city="Ahmedabad">
+      <div class="city-monument">
+        <svg viewBox="0 0 80 64" xmlns="http://www.w3.org/2000/svg">
+          <!-- Siddi Saiyyed Mosque jali style -->
+          <rect x="18" y="28" width="44" height="28" rx="2" fill="currentColor" opacity=".15"/>
+          <!-- arches row -->
+          <path d="M20 56 L20 38 Q26 24 32 38 L32 56" fill="currentColor" opacity=".35"/>
+          <path d="M32 56 L32 38 Q38 24 44 38 L44 56" fill="currentColor" opacity=".35"/>
+          <path d="M44 56 L44 38 Q50 24 56 38 L56 56" fill="currentColor" opacity=".35"/>
+          <!-- minaret left -->
+          <rect x="18" y="10" width="5" height="46" rx="1" fill="currentColor" opacity=".55"/>
+          <ellipse cx="20.5" cy="10" rx="4" ry="5" fill="currentColor" opacity=".75"/>
+          <rect x="19.5" y="3" width="2" height="8" rx="1" fill="currentColor"/>
+          <!-- minaret right -->
+          <rect x="57" y="10" width="5" height="46" rx="1" fill="currentColor" opacity=".55"/>
+          <ellipse cx="59.5" cy="10" rx="4" ry="5" fill="currentColor" opacity=".75"/>
+          <rect x="58.5" y="3" width="2" height="8" rx="1" fill="currentColor"/>
+        </svg>
+      </div>
+      <div class="city-name">Ahmedabad</div>
+      <div class="city-state">Gujarat</div>
+    </div>
+
+    <!-- Kochi -->
+    <div class="city-card" onclick="selectCityCard(this)" data-city="Kochi">
+      <div class="city-monument">
+        <svg viewBox="0 0 80 64" xmlns="http://www.w3.org/2000/svg">
+          <!-- Chinese Fishing Nets -->
+          <!-- main pole -->
+          <rect x="38" y="8" width="3" height="42" rx="1" fill="currentColor" opacity=".7"/>
+          <!-- diagonal arm -->
+          <line x1="40" y1="14" x2="14" y2="38" stroke="currentColor" stroke-width="2.5" opacity=".7"/>
+          <line x1="40" y1="14" x2="64" y2="30" stroke="currentColor" stroke-width="1.5" opacity=".45"/>
+          <!-- net -->
+          <polygon points="14,38 26,52 52,52 64,30 40,14" fill="currentColor" opacity=".18"/>
+          <line x1="14" y1="38" x2="64" y2="30" stroke="currentColor" stroke-width="1" opacity=".3"/>
+          <line x1="18" y1="42" x2="60" y2="34" stroke="currentColor" stroke-width="1" opacity=".2"/>
+          <!-- counterweight stones -->
+          <circle cx="62" cy="32" r="4" fill="currentColor" opacity=".6"/>
+          <circle cx="66" cy="36" r="3" fill="currentColor" opacity=".5"/>
+          <!-- water line -->
+          <rect x="10" y="53" width="60" height="3" rx="1" fill="currentColor" opacity=".3"/>
+        </svg>
+      </div>
+      <div class="city-name">Kochi</div>
+      <div class="city-state">Kerala</div>
+    </div>
+
+    <!-- Coimbatore -->
+    <div class="city-card" onclick="selectCityCard(this)" data-city="Coimbatore">
+      <div class="city-monument">
+        <svg viewBox="0 0 80 64" xmlns="http://www.w3.org/2000/svg">
+          <!-- Marudamalai Temple gopuram (simpler) -->
+          <rect x="30" y="40" width="20" height="18" rx="1" fill="currentColor" opacity=".2"/>
+          <rect x="28" y="34" width="24" height="8" rx="1" fill="currentColor" opacity=".35"/>
+          <rect x="30" y="27" width="20" height="9" rx="1" fill="currentColor" opacity=".5"/>
+          <rect x="32" y="20" width="16" height="9" rx="1" fill="currentColor" opacity=".62"/>
+          <rect x="34" y="13" width="12" height="9" rx="1" fill="currentColor" opacity=".75"/>
+          <rect x="37" y="6" width="6" height="9" rx="1" fill="currentColor" opacity=".88"/>
+          <rect x="39" y="2" width="2" height="6" rx="1" fill="currentColor"/>
+          <rect x="28" y="34" width="24" height="1.5" fill="currentColor" opacity=".4"/>
+          <rect x="30" y="27" width="20" height="1.5" fill="currentColor" opacity=".4"/>
+          <rect x="32" y="20" width="16" height="1.5" fill="currentColor" opacity=".4"/>
+          <rect x="34" y="13" width="12" height="1.5" fill="currentColor" opacity=".4"/>
+        </svg>
+      </div>
+      <div class="city-name">Coimbatore</div>
+      <div class="city-state">Tamil Nadu</div>
+    </div>
+
+    <!-- Jaipur -->
+    <div class="city-card" onclick="selectCityCard(this)" data-city="Jaipur">
+      <div class="city-monument">
+        <svg viewBox="0 0 80 64" xmlns="http://www.w3.org/2000/svg">
+          <!-- Hawa Mahal honeycomb facade -->
+          <rect x="16" y="14" width="48" height="44" rx="1" fill="currentColor" opacity=".12"/>
+          <!-- top row windows/arches -->
+          <path d="M18 22 L18 14 Q21 8 24 14 L24 22Z" fill="currentColor" opacity=".5"/>
+          <path d="M26 22 L26 14 Q29 8 32 14 L32 22Z" fill="currentColor" opacity=".5"/>
+          <path d="M34 22 L34 14 Q37 8 40 14 L40 22Z" fill="currentColor" opacity=".5"/>
+          <path d="M42 22 L42 14 Q45 8 48 14 L48 22Z" fill="currentColor" opacity=".5"/>
+          <path d="M50 22 L50 14 Q53 8 56 14 L56 22Z" fill="currentColor" opacity=".5"/>
+          <!-- mid row -->
+          <path d="M18 32 L18 24 Q22 18 26 24 L26 32Z" fill="currentColor" opacity=".38"/>
+          <path d="M30 32 L30 24 Q34 18 38 24 L38 32Z" fill="currentColor" opacity=".38"/>
+          <path d="M42 32 L42 24 Q46 18 50 24 L50 32Z" fill="currentColor" opacity=".38"/>
+          <path d="M54 32 L54 24 Q58 18 62 24 L62 32Z" fill="currentColor" opacity=".38"/>
+          <!-- lower facade -->
+          <rect x="16" y="32" width="48" height="26" rx="1" fill="currentColor" opacity=".2"/>
+          <rect x="22" y="36" width="8" height="14" rx="2" fill="currentColor" opacity=".4"/>
+          <rect x="36" y="36" width="8" height="14" rx="2" fill="currentColor" opacity=".4"/>
+          <rect x="50" y="36" width="8" height="14" rx="2" fill="currentColor" opacity=".4"/>
+        </svg>
+      </div>
+      <div class="city-name">Jaipur</div>
+      <div class="city-state">Rajasthan</div>
+    </div>
+
+    <!-- Lucknow -->
+    <div class="city-card" onclick="selectCityCard(this)" data-city="Lucknow">
+      <div class="city-monument">
+        <svg viewBox="0 0 80 64" xmlns="http://www.w3.org/2000/svg">
+          <!-- Bara Imambara -->
+          <rect x="16" y="34" width="48" height="22" rx="1" fill="currentColor" opacity=".2"/>
+          <rect x="16" y="28" width="48" height="8" rx="1" fill="currentColor" opacity=".35"/>
+          <!-- central arch -->
+          <path d="M30 56 L30 36 Q40 16 50 36 L50 56" fill="currentColor" opacity=".25"/>
+          <!-- battlements top -->
+          <rect x="17" y="22" width="4" height="8" rx="1" fill="currentColor" opacity=".5"/>
+          <rect x="24" y="22" width="4" height="8" rx="1" fill="currentColor" opacity=".5"/>
+          <rect x="36" y="22" width="4" height="8" rx="1" fill="currentColor" opacity=".5"/>
+          <rect x="52" y="22" width="4" height="8" rx="1" fill="currentColor" opacity=".5"/>
+          <rect x="59" y="22" width="4" height="8" rx="1" fill="currentColor" opacity=".5"/>
+          <!-- minarets -->
+          <rect x="16" y="8" width="6" height="26" rx="1" fill="currentColor" opacity=".55"/>
+          <rect x="58" y="8" width="6" height="26" rx="1" fill="currentColor" opacity=".55"/>
+          <ellipse cx="19" cy="8" rx="4" ry="5" fill="currentColor" opacity=".72"/>
+          <ellipse cx="61" cy="8" rx="4" ry="5" fill="currentColor" opacity=".72"/>
+          <rect x="18" y="2" width="2" height="7" rx="1" fill="currentColor"/>
+          <rect x="60" y="2" width="2" height="7" rx="1" fill="currentColor"/>
+        </svg>
+      </div>
+      <div class="city-name">Lucknow</div>
+      <div class="city-state">Uttar Pradesh</div>
+    </div>
+
+    <!-- Indore -->
+    <div class="city-card" onclick="selectCityCard(this)" data-city="Indore">
+      <div class="city-monument">
+        <svg viewBox="0 0 80 64" xmlns="http://www.w3.org/2000/svg">
+          <!-- Rajwada Palace -->
+          <rect x="16" y="36" width="48" height="20" rx="1" fill="currentColor" opacity=".18"/>
+          <rect x="16" y="30" width="48" height="8" rx="1" fill="currentColor" opacity=".3"/>
+          <!-- arched windows row -->
+          <path d="M21 38 L21 32 Q24 26 27 32 L27 38Z" fill="currentColor" opacity=".5"/>
+          <path d="M30 38 L30 32 Q33 26 36 32 L36 38Z" fill="currentColor" opacity=".5"/>
+          <path d="M44 38 L44 32 Q47 26 50 32 L50 38Z" fill="currentColor" opacity=".5"/>
+          <path d="M53 38 L53 32 Q56 26 59 32 L59 38Z" fill="currentColor" opacity=".5"/>
+          <!-- central tower -->
+          <rect x="34" y="10" width="12" height="26" rx="1" fill="currentColor" opacity=".45"/>
+          <path d="M34 18 Q40 6 46 18" fill="currentColor" opacity=".65"/>
+          <rect x="37" y="3" width="6" height="8" rx="1" fill="currentColor" opacity=".8"/>
+          <rect x="39" y="1" width="2" height="4" rx="1" fill="currentColor"/>
+          <!-- side towers -->
+          <rect x="16" y="18" width="8" height="18" rx="1" fill="currentColor" opacity=".45"/>
+          <rect x="56" y="18" width="8" height="18" rx="1" fill="currentColor" opacity=".45"/>
+          <path d="M16 22 Q20 14 24 22" fill="currentColor" opacity=".6"/>
+          <path d="M56 22 Q60 14 64 22" fill="currentColor" opacity=".6"/>
+        </svg>
+      </div>
+      <div class="city-name">Indore</div>
+      <div class="city-state">Madhya Pradesh</div>
+    </div>
+
+    <!-- Nagpur -->
+    <div class="city-card" onclick="selectCityCard(this)" data-city="Nagpur">
+      <div class="city-monument">
+        <svg viewBox="0 0 80 64" xmlns="http://www.w3.org/2000/svg">
+          <!-- Sitabuldi Fort -->
+          <rect x="14" y="32" width="52" height="24" rx="1" fill="currentColor" opacity=".15"/>
+          <rect x="14" y="26" width="52" height="8" rx="2" fill="currentColor" opacity=".3"/>
+          <!-- crenellations -->
+          <rect x="15" y="20" width="4" height="8" rx="1" fill="currentColor" opacity=".5"/>
+          <rect x="22" y="20" width="4" height="8" rx="1" fill="currentColor" opacity=".5"/>
+          <rect x="29" y="20" width="4" height="8" rx="1" fill="currentColor" opacity=".5"/>
+          <rect x="36" y="20" width="4" height="8" rx="1" fill="currentColor" opacity=".5"/>
+          <rect x="43" y="20" width="4" height="8" rx="1" fill="currentColor" opacity=".5"/>
+          <rect x="50" y="20" width="4" height="8" rx="1" fill="currentColor" opacity=".5"/>
+          <rect x="57" y="20" width="4" height="8" rx="1" fill="currentColor" opacity=".5"/>
+          <!-- hill base -->
+          <path d="M14 32 Q40 18 66 32" fill="currentColor" opacity=".2"/>
+          <!-- flag -->
+          <rect x="38" y="6" width="2" height="16" rx="1" fill="currentColor" opacity=".8"/>
+          <polygon points="40,6 50,10 40,14" fill="currentColor" opacity=".7"/>
+        </svg>
+      </div>
+      <div class="city-name">Nagpur</div>
+      <div class="city-state">Maharashtra</div>
+    </div>
+
+    <!-- Surat -->
+    <div class="city-card" onclick="selectCityCard(this)" data-city="Surat">
+      <div class="city-monument">
+        <svg viewBox="0 0 80 64" xmlns="http://www.w3.org/2000/svg">
+          <!-- Surat Castle -->
+          <rect x="16" y="30" width="48" height="26" rx="1" fill="currentColor" opacity=".18"/>
+          <rect x="16" y="24" width="48" height="8" rx="1" fill="currentColor" opacity=".32"/>
+          <!-- crenellations -->
+          <rect x="17" y="18" width="5" height="8" rx="1" fill="currentColor" opacity=".52"/>
+          <rect x="25" y="18" width="5" height="8" rx="1" fill="currentColor" opacity=".52"/>
+          <rect x="33" y="18" width="5" height="8" rx="1" fill="currentColor" opacity=".52"/>
+          <rect x="41" y="18" width="5" height="8" rx="1" fill="currentColor" opacity=".52"/>
+          <rect x="49" y="18" width="5" height="8" rx="1" fill="currentColor" opacity=".52"/>
+          <rect x="57" y="18" width="5" height="8" rx="1" fill="currentColor" opacity=".52"/>
+          <!-- corner towers -->
+          <rect x="14" y="10" width="9" height="22" rx="1" fill="currentColor" opacity=".48"/>
+          <rect x="57" y="10" width="9" height="22" rx="1" fill="currentColor" opacity=".48"/>
+          <rect x="14" y="6" width="9" height="6" rx="2" fill="currentColor" opacity=".65"/>
+          <rect x="57" y="6" width="9" height="6" rx="2" fill="currentColor" opacity=".65"/>
+          <!-- gate -->
+          <path d="M33 56 L33 40 Q40 28 47 40 L47 56" fill="currentColor" opacity=".22"/>
+        </svg>
+      </div>
+      <div class="city-name">Surat</div>
+      <div class="city-state">Gujarat</div>
+    </div>
+
+    <!-- Vizag -->
+    <div class="city-card" onclick="selectCityCard(this)" data-city="Vizag">
+      <div class="city-monument">
+        <svg viewBox="0 0 80 64" xmlns="http://www.w3.org/2000/svg">
+          <!-- Kailasagiri Hill / lighthouse -->
+          <!-- hill -->
+          <path d="M10 56 Q30 30 40 28 Q50 30 70 56Z" fill="currentColor" opacity=".18"/>
+          <!-- lighthouse -->
+          <rect x="36" y="14" width="8" height="20" rx="2" fill="currentColor" opacity=".6"/>
+          <rect x="34" y="28" width="12" height="4" rx="1" fill="currentColor" opacity=".7"/>
+          <ellipse cx="40" cy="14" rx="6" ry="4" fill="currentColor" opacity=".8"/>
+          <rect x="37" y="6" width="6" height="10" rx="2" fill="currentColor" opacity=".88"/>
+          <ellipse cx="40" cy="6" rx="5" ry="4" fill="currentColor"/>
+          <!-- light rays -->
+          <line x1="40" y1="4" x2="40" y2="1" stroke="currentColor" stroke-width="1.5" opacity=".6"/>
+          <line x1="40" y1="4" x2="46" y2="2" stroke="currentColor" stroke-width="1.5" opacity=".6"/>
+          <line x1="40" y1="4" x2="34" y2="2" stroke="currentColor" stroke-width="1.5" opacity=".6"/>
+          <!-- sea -->
+          <rect x="10" y="54" width="60" height="4" rx="2" fill="currentColor" opacity=".3"/>
+        </svg>
+      </div>
+      <div class="city-name">Vizag</div>
+      <div class="city-state">Andhra Pradesh</div>
+    </div>
+
+  </div><!-- /city-card-grid -->
+  <div style="height:90px"></div>
+  <div class="bottom-bar"><button class="btn-neon" onclick="go('s-phone')"><span data-key="continue">Continue</span></button></div>
+</div>
+
+<!-- LOGIN PHONE -->
+<div class="screen" id="s-login-phone">
+  <div class="topbar">
+    <button class="topbar-back" onclick="go('s-choice')">&#8592; Back</button>
+    <div>
+      <div class="topbar-title">Verify your mobile</div>
+      <div class="topbar-sub">We'll send a 4-digit OTP</div>
+    </div>
+  </div>
+  <div class="phone-card">
+    <div class="phone-card-label">MOBILE NUMBER</div>
+    <div class="phone-input-row">
+      <div class="phone-prefix">&#128222; +91</div>
+      <input class="phone-real-input" id="login-phone-inp" type="tel" placeholder="98765 43210" maxlength="10" oninput="this.value=this.value.replace(/\D/g,'');document.getElementById('login-otp-btn').disabled=this.value.length<10"/>
+    </div>
+    <button class="btn-neon" id="login-otp-btn" onclick="go('s-login-otp')" style="border-radius:12px" disabled>Send OTP</button>
+    <div class="secure-note">&#128737; <span>Secure &middot; OTP demo: 1234</span></div>
+  </div>
+</div>
+
+<!-- LOGIN OTP -->
+<div class="screen" id="s-login-otp">
+  <div class="topbar">
+    <button class="topbar-back" onclick="go('s-login-phone')">&#8592; Back</button>
+    <div>
+      <div class="topbar-title">Enter OTP</div>
+      <div class="topbar-sub">4-digit code sent to your number</div>
+    </div>
+  </div>
+  <div class="otp-card">
+    <div class="otp-card-title">Verify your number</div>
+    <div class="otp-card-sub">Enter the 4-digit code we sent you</div>
+    <div class="otp-boxes">
+      <input class="otp-b" type="text" maxlength="1" oninput="otpNext(this,0);loginOtpCheck()"/>
+      <input class="otp-b" type="text" maxlength="1" oninput="otpNext(this,1);loginOtpCheck()"/>
+      <input class="otp-b" type="text" maxlength="1" oninput="otpNext(this,2);loginOtpCheck()"/>
+      <input class="otp-b" type="text" maxlength="1" oninput="otpNext(this,3);loginOtpCheck()"/>
+    </div>
+    <div class="resend-row">Didn't receive? <span class="resend-link" onclick="document.querySelectorAll('#s-login-otp .otp-b').forEach(b=>b.value='');document.getElementById('login-verify-btn').disabled=true">Resend OTP</span></div>
+  </div>
+  <div style="padding:0 20px">
+    <button class="btn-neon" id="login-verify-btn" onclick="loginVerify()" disabled>Verify &amp; Continue &#8594;</button>
+  </div>
+</div>
+
+<!-- PHONE -->
+<div class="screen" id="s-phone">
+  <div class="topbar">
+    <button class="topbar-back" onclick="go('s-city')"><i class="svg-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></i></svg></i></button>
+    <i class="svg-icon topbar-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg></i></svg></i>
+    <div>
+      <div class="topbar-title" data-key="verify_mobile">Verify your mobile</div>
+      <div class="topbar-sub" data-key="otp_send_hint">We'll send a 4-digit OTP</div>
+    </div>
+  </div>
+  <div class="phone-card">
+    <div class="phone-card-label" data-key="mobile_number">MOBILE NUMBER</div>
+    <div class="phone-input-row">
+      <div class="phone-prefix"><i class="svg-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg></i></svg></i> +91</div>
+      <input class="phone-real-input" id="phone-inp" type="tel" placeholder="98765 43210" maxlength="10"/>
+    </div>
+    <button class="btn-neon" onclick="go('s-otp')" style="border-radius:12px"><span data-key="send_otp">Send OTP</span></button>
+    <div class="secure-note"><i class="svg-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4v5c0 4.4-3.4 8.5-8 10-4.6-1.5-8-5.6-8-10V7l8-4z"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4v5c0 4.4-3.4 8.5-8 10-4.6-1.5-8-5.6-8-10V7l8-4z"/><path d="M9 12l2 2 4-4"/></svg></i><path d="M9 12l2 2 4-4"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4v5c0 4.4-3.4 8.5-8 10-4.6-1.5-8-5.6-8-10V7l8-4z"/><path d="M9 12l2 2 4-4"/></svg></i></svg></i><span data-key="secure_note">Secure · OTP demo: 1234</span></div>
+  </div>
+</div>
+
+<!-- OTP -->
+<div class="screen" id="s-otp">
+  <div class="topbar">
+    <button class="topbar-back" onclick="go('s-phone')"><i class="svg-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></i></svg></i></button>
+    <i class="svg-icon topbar-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8l-5 3V6a2 2 0 0 1 2-2z"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8l-5 3V6a2 2 0 0 1 2-2z"/></svg></i></svg></i>
+    <div>
+      <div class="topbar-title" data-key="enter_otp">Enter OTP</div>
+      <div class="topbar-sub" data-key="otp_sub">4-digit code sent to your number</div>
+    </div>
+  </div>
+  <div class="otp-card">
+    <div class="otp-card-title" data-key="verify_code">Verify your number</div>
+    <div class="otp-card-sub" data-key="otp_desc">Enter the 4-digit code we sent you</div>
+    <div class="otp-boxes">
+      <input class="otp-b" type="text" maxlength="1" oninput="otpNext(this,0)"/>
+      <input class="otp-b" type="text" maxlength="1" oninput="otpNext(this,1)"/>
+      <input class="otp-b" type="text" maxlength="1" oninput="otpNext(this,2)"/>
+      <input class="otp-b" type="text" maxlength="1" oninput="otpNext(this,3)"/>
+    </div>
+    <div class="resend-row"><span data-key="no_code">Didn't receive?</span> <span class="resend-link" data-key="resend">Resend OTP</span></div>
+  </div>
+  <div style="padding:0 20px"><button class="btn-neon" onclick="go('s-profile')"><span data-key="verify_continue">Verify & Continue</span> <i class="svg-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></i></svg></i></button></div>
+</div>
+
+<!-- REGION -->
+
+
+<!-- PROFILE -->
+<div class="screen" id="s-profile">
+  <div class="topbar">
+    <button class="topbar-back" onclick="go('s-otp')"><i class="svg-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></i></svg></i></button>
+    <i class="svg-icon topbar-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></i><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></i></svg></i>
+    <div>
+      <div class="topbar-title" data-key="your_profile">Your Profile</div>
+      <div class="topbar-sub" data-key="profile_sub">Tell us about yourself</div>
+    </div>
+  </div>
+  <div class="av-wrap">
+    <div class="av-circle" id="av-circle" onclick="document.getElementById('avf').click()">
+      <i class="svg-icon" id="av-cam-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h1l2-3h8l2 3h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h1l2-3h8l2 3h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2"/><circle cx="12" cy="13" r="3"/></svg></i><circle cx="12" cy="13" r="3"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h1l2-3h8l2 3h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2"/><circle cx="12" cy="13" r="3"/></svg></i></svg></i>
+      <span class="av-sub" id="av-sub-txt" data-key="add_photo">ADD PHOTO</span>
+      <img id="av-img" alt="Profile"/>
+    </div>
+    <p style="font-size:11px;color:#555;margin-top:6px">Tap to upload photo</p>
+    <input type="file" id="avf" accept="image/*" style="display:none" onchange="previewAv(this)"/>
+  </div>
+  <div class="row2">
+    <div>
+      <div class="field-label" data-key="first_name">FIRST NAME</div>
+      <input class="field-inp" id="fn" type="text" placeholder="First"/>
+    </div>
+    <div>
+      <div class="field-label" data-key="last_name">LAST NAME</div>
+      <input class="field-inp" id="ln" type="text" placeholder="Last"/>
+    </div>
+  </div>
+  <div class="field-label" data-key="address">ADDRESS</div>
+  <textarea class="field-inp" id="addr" rows="2" placeholder="House no, Street, City, Pincode" style="resize:none;height:62px;line-height:1.5"></textarea>
+  <div style="height:20px"></div>
+  <button class="btn-neon" style="border-radius:14px" onclick="createAccount()"><span data-key="create_acc">Create Account</span> <i class="svg-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="8" r="4"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="8" r="4"/><path d="M3 20c0-3.9 3.1-7 7-7"/><path d="M15 19l2 2 4-4"/></svg></i><path d="M3 20c0-3.9 3.1-7 7-7"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="8" r="4"/><path d="M3 20c0-3.9 3.1-7 7-7"/><path d="M15 19l2 2 4-4"/></svg></i><path d="M15 19l2 2 4-4"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="8" r="4"/><path d="M3 20c0-3.9 3.1-7 7-7"/><path d="M15 19l2 2 4-4"/></svg></i></svg></i></button>
+</div>
+
+<!-- ═══════════════ KYC DASHBOARD ═══════════════ -->
+<div class="screen" id="s-kyc">
+  <div style="padding:14px 20px 0;display:flex;align-items:center">
+    <button class="topbar-back" onclick="go('s-choice')"><i class="svg-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></i></svg></i></button>
+  </div>
+
+  <!-- Cyan header -->
+  <div class="kyc-cyan-header">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+      <div style="width:52px;height:52px;border-radius:50%;background:#00c4d9;border:2px solid #009fb5;overflow:hidden;flex-shrink:0;position:relative;display:flex;align-items:center;justify-content:center">
+        <span id="kyc-avatar-initials" style="font-size:18px;font-weight:800;color:#004455">?</span>
+        <img id="kyc-avatar-img" alt="Profile" style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%"/>
+      </div>
+      <div><div class="kyc-hi" id="kyc-hi" style="margin-bottom:0">HI,</div></div>
+    </div>
+    <div class="kyc-headline" data-key="please_complete">Please complete all these details</div>
+    <div class="kyc-headline-sub" data-key="required_note">Required to start accepting gigs</div>
+    <div class="kyc-pbar-bg"><div class="kyc-pbar-fill" id="kpbar" style="width:11%"></div></div>
+    <div class="kyc-pbar-row"><span data-key="profile_complete">Profile complete</span><span id="kpct">11%</span></div>
+  </div>
+
+  <!-- PERSONAL DETAILS -->
+  <div class="section-lbl" data-key="personal_details">PERSONAL DETAILS</div>
+
+  <!-- Phone — always verified -->
+  <div class="phone-done-row">
+    <div class="icon-box" style="background:#0d2e0d"><i class="svg-icon" style="color:#7fff00;font-size:20px"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg></i></svg></i></div>
+    <div class="row-info">
+      <div class="row-title" data-key="phone_number">Phone Number</div>
+      <div class="row-sub" id="ph-val">+91 98765 43210</div>
+    </div>
+    <div class="verified-pill"><i class="svg-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-5"/></svg></i><path d="M8 12l3 3 5-5"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-5"/></svg></i></svg></i><span data-key="verified">Verified</span></div>
+  </div>
+
+  <!-- Personal info card -->
+  <div class="personal-card unfilled" id="pi-card" onclick="piClick()">
+    <div class="icon-box" id="pi-icon" style="background:#1e231e;overflow:hidden;position:relative"><i class="svg-icon" style="color:#888;font-size:20px"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></i><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></i></svg></i></div>
+    <div class="row-info">
+      <div class="row-title" id="pi-title" data-key="personal_info">Personal Info</div>
+      <div class="row-sub" id="pi-sub" data-key="please_fill_sub">Add your details</div>
+    </div>
+    <div class="personal-card-right" id="pi-right">
+      <span class="fill-pill-personal" data-key="add_details">Add Details</span>
+    </div>
+  </div>
+
+  <!-- KYC DOCUMENTS -->
+  <div class="section-lbl" data-key="kyc_documents">KYC DOCUMENTS</div>
+
+  <!-- Lock notice — hidden after personal done -->
+  <div class="lock-notice" id="kyc-lock-notice">
+    <i class="svg-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg></i><path d="M8 11V7a4 4 0 0 1 8 0v4"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg></i><circle cx="12" cy="16" r="1" fill="currentColor"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg></i></svg></i>
+    <span data-key="lock_msg">Complete your basic information above to unlock KYC document verification.</span>
+  </div>
+
+  <!-- Aadhar -->
+  <div class="kyc-doc-card state-locked" id="kd-aadhar" onclick="kycTap('aadhar')">
+    <div class="icon-box ib-aadhar" style="overflow:hidden;padding:0">
+      <svg viewBox="0 0 44 44" style="width:44px;height:44px"><rect width="44" height="44" rx="12" fill="#1a2840"/>
+      <rect x="6" y="10" width="32" height="24" rx="3" fill="#2a3d5a"/><rect x="6" y="10" width="32" height="7" rx="3" fill="#1565c0" opacity=".8"/>
+      <circle cx="14" cy="28" r="4" fill="#4a9eff" opacity=".7"/>
+      <rect x="20" y="23" width="14" height="2" rx="1" fill="#4a9eff" opacity=".6"/>
+      <rect x="20" y="27" width="10" height="2" rx="1" fill="#4a9eff" opacity=".4"/>
+      <text x="22" y="16" text-anchor="middle" font-size="5" fill="#fff" font-weight="bold" font-family="sans-serif">AADHAAR</text>
+      </svg>
+    </div>
+    <div class="row-info">
+      <div class="row-title" data-key="aadhar">Aadhar Card</div>
+      <div class="row-sub" data-key="govt_id">Government Identity</div>
+    </div>
+    <div id="kd-aadhar-right"><div class="locked-label"><i class="svg-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg></i><path d="M8 11V7a4 4 0 0 1 8 0v4"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg></i><circle cx="12" cy="16" r="1" fill="currentColor"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg></i></svg></i><span data-key="locked">Locked</span></div></div>
+  </div>
+
+  <!-- PAN -->
+  <div class="kyc-doc-card state-locked" id="kd-pan" onclick="kycTap('pan')">
+    <div class="icon-box ib-pan" style="overflow:hidden;padding:0">
+      <svg viewBox="0 0 44 44" style="width:44px;height:44px"><rect width="44" height="44" rx="12" fill="#2a1f10"/>
+      <rect x="6" y="10" width="32" height="24" rx="3" fill="#3d2b10"/><rect x="6" y="10" width="32" height="7" rx="3" fill="#8B4513" opacity=".8"/>
+      <rect x="10" y="20" width="24" height="2" rx="1" fill="#e8943a" opacity=".8"/>
+      <rect x="10" y="24" width="18" height="2" rx="1" fill="#e8943a" opacity=".5"/>
+      <rect x="10" y="28" width="12" height="2" rx="1" fill="#e8943a" opacity=".4"/>
+      <text x="22" y="16" text-anchor="middle" font-size="5" fill="#ffcc99" font-weight="bold" font-family="sans-serif">INCOME TAX</text>
+      </svg>
+    </div>
+    <div class="row-info">
+      <div class="row-title" data-key="pan">PAN Card</div>
+      <div class="row-sub" data-key="tax_id">Tax Identity</div>
+    </div>
+    <div id="kd-pan-right"><div class="locked-label"><i class="svg-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg></i><path d="M8 11V7a4 4 0 0 1 8 0v4"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg></i><circle cx="12" cy="16" r="1" fill="currentColor"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg></i></svg></i><span data-key="locked">Locked</span></div></div>
+  </div>
+
+  <!-- Driving License -->
+  <div class="kyc-doc-card state-locked" id="kd-dl" onclick="kycTap('dl')">
+    <div class="icon-box ib-dl" style="overflow:hidden;padding:0">
+      <svg viewBox="0 0 44 44" style="width:44px;height:44px"><rect width="44" height="44" rx="12" fill="#2a1020"/>
+      <rect x="6" y="10" width="32" height="24" rx="3" fill="#3d1028"/><rect x="6" y="10" width="32" height="7" rx="3" fill="#8B1040" opacity=".8"/>
+      <circle cx="14" cy="28" r="4" fill="#e05588" opacity=".6"/>
+      <rect x="20" y="23" width="14" height="2" rx="1" fill="#e05588" opacity=".6"/>
+      <rect x="20" y="27" width="10" height="2" rx="1" fill="#e05588" opacity=".4"/>
+      <path d="M30 30 Q32 27 35 28 L36 30Z" fill="#e05588" opacity=".5"/>
+      <text x="22" y="16" text-anchor="middle" font-size="4.5" fill="#ffb3cc" font-weight="bold" font-family="sans-serif">DRIVING LIC</text>
+      </svg>
+    </div>
+    <div class="row-info">
+      <div class="row-title" data-key="driving_license">Driving License</div>
+      <div class="row-sub" data-key="optional_id">Optional Identity</div>
+    </div>
+    <div id="kd-dl-right"><div class="locked-label"><i class="svg-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg></i><path d="M8 11V7a4 4 0 0 1 8 0v4"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg></i><circle cx="12" cy="16" r="1" fill="currentColor"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg></i></svg></i><span data-key="locked">Locked</span></div></div>
+  </div>
+
+  <!-- PAYMENT DETAILS -->
+  <div class="section-lbl" data-key="payment_details">PAYMENT DETAILS</div>
+
+  <!-- Payment lock notice — hidden after all KYC done -->
+  <div class="lock-notice" id="pay-lock-notice">
+    <i class="svg-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg></i><path d="M8 11V7a4 4 0 0 1 8 0v4"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg></i><circle cx="12" cy="16" r="1" fill="currentColor"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg></i></svg></i>
+    <span data-key="pay_lock_msg">Complete KYC documents above to unlock payment details.</span>
+  </div>
+
+  <!-- Bank Account -->
+  <div class="pay-card state-locked" id="kd-bank" onclick="payTap('bank')">
+    <div class="icon-box ib-bank" style="overflow:hidden;padding:0">
+      <svg viewBox="0 0 44 44" style="width:44px;height:44px"><rect width="44" height="44" rx="12" fill="#102a18"/>
+      <polygon points="22,8 36,16 8,16" fill="#4ccc7a" opacity=".8"/>
+      <rect x="10" y="16" width="24" height="2" fill="#4ccc7a" opacity=".5"/>
+      <rect x="12" y="18" width="4" height="12" rx="1" fill="#4ccc7a" opacity=".7"/>
+      <rect x="18" y="18" width="4" height="12" rx="1" fill="#4ccc7a" opacity=".7"/>
+      <rect x="24" y="18" width="4" height="12" rx="1" fill="#4ccc7a" opacity=".7"/>
+      <rect x="30" y="18" width="4" height="12" rx="1" fill="#4ccc7a" opacity=".7"/>
+      <rect x="10" y="30" width="24" height="2" rx="1" fill="#4ccc7a" opacity=".5"/>
+      </svg>
+    </div>
+    <div class="row-info">
+      <div class="row-title" data-key="bank_account">Bank Account</div>
+      <div class="row-sub" data-key="acc_details">Account & IFSC details</div>
+    </div>
+    <div id="kd-bank-right"><div class="locked-label"><i class="svg-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg></i><path d="M8 11V7a4 4 0 0 1 8 0v4"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg></i><circle cx="12" cy="16" r="1" fill="currentColor"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg></i></svg></i><span data-key="locked">Locked</span></div></div>
+  </div>
+
+  <!-- UPI ID -->
+  <div class="pay-card state-locked" id="kd-upi" onclick="payTap('upi')">
+    <div class="icon-box ib-upi" style="overflow:hidden;padding:0">
+      <svg viewBox="0 0 44 44" style="width:44px;height:44px"><rect width="44" height="44" rx="12" fill="#1a1040"/>
+      <rect x="8" y="8" width="12" height="12" rx="2" fill="none" stroke="#8877ee" stroke-width="2"/>
+      <rect x="11" y="11" width="6" height="6" rx="1" fill="#8877ee" opacity=".8"/>
+      <rect x="24" y="8" width="12" height="12" rx="2" fill="none" stroke="#8877ee" stroke-width="2"/>
+      <rect x="27" y="11" width="6" height="6" rx="1" fill="#8877ee" opacity=".8"/>
+      <rect x="8" y="24" width="12" height="12" rx="2" fill="none" stroke="#8877ee" stroke-width="2"/>
+      <rect x="11" y="27" width="6" height="6" rx="1" fill="#8877ee" opacity=".8"/>
+      <rect x="24" y="24" width="5" height="5" rx="1" fill="#8877ee" opacity=".6"/>
+      <rect x="31" y="24" width="5" height="5" rx="1" fill="#8877ee" opacity=".6"/>
+      <rect x="24" y="31" width="5" height="5" rx="1" fill="#8877ee" opacity=".6"/>
+      <rect x="31" y="31" width="5" height="5" rx="1" fill="#8877ee" opacity=".6"/>
+      </svg>
+    </div>
+    <div class="row-info">
+      <div class="row-title" data-key="upi_id">UPI ID</div>
+      <div class="row-sub" data-key="upi_linked">Linked payment handle</div>
+    </div>
+    <div id="kd-upi-right"><div class="locked-label"><i class="svg-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg></i><path d="M8 11V7a4 4 0 0 1 8 0v4"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg></i><circle cx="12" cy="16" r="1" fill="currentColor"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg></i></svg></i><span data-key="locked">Locked</span></div></div>
+  </div>
+
+  <div style="height:30px"></div>
+</div>
+
+</div><!-- /app -->
+
+<script>
+/* ─── TRANSLATIONS ─── */
+const T={
+  en:{welcome:"Welcome",tap_begin:"Tap to begin",sign_up:"Sign Up",log_in:"Log In",choose_language:"Choose your language",lang_hint:"You can change this later in settings",continue:"Continue",verify_mobile:"Verify your mobile",otp_send_hint:"We'll send a 4-digit OTP",mobile_number:"MOBILE NUMBER",send_otp:"Send OTP",secure_note:"Secure · OTP demo: 1234",enter_otp:"Enter OTP",otp_sub:"4-digit code sent to your number",verify_code:"Verify your number",otp_desc:"Enter the 4-digit code we sent you",no_code:"Didn't receive?",resend:"Resend OTP",verify_continue:"Verify & Continue",select_region:"Select your region",region_sub:"We'll show gigs near here",your_profile:"Your Profile",profile_sub:"Tell us about yourself",add_photo:"ADD PHOTO",first_name:"FIRST NAME",last_name:"LAST NAME",address:"ADDRESS",create_acc:"Create Account",please_complete:"Please complete all these details",required_note:"Required to start accepting gigs",profile_complete:"Profile complete",personal_details:"PERSONAL DETAILS",phone_number:"Phone Number",verified:"Verified",personal_info:"Personal Info",please_fill_sub:"Add your details",add_details:"Add Details",kyc_documents:"KYC DOCUMENTS",lock_msg:"Complete your basic information above to unlock KYC document verification.",aadhar:"Aadhar Card",govt_id:"Government Identity",pan:"PAN Card",tax_id:"Tax Identity",driving_license:"Driving License",optional_id:"Optional Identity",payment_details:"PAYMENT DETAILS",pay_lock_msg:"Complete KYC documents above to unlock payment details.",bank_account:"Bank Account",acc_details:"Account & IFSC details",upi_id:"UPI ID",upi_linked:"Linked payment handle",locked:"Locked",please_fill:"PLEASE FILL",completed:"Completed"},
+  hi:{welcome:"स्वागत है",tap_begin:"शुरू करने के लिए टैप करें",sign_up:"साइन अप",log_in:"लॉग इन",choose_language:"अपनी भाषा चुनें",lang_hint:"आप इसे बाद में सेटिंग्स में बदल सकते हैं",continue:"जारी रखें",verify_mobile:"मोबाइल सत्यापित करें",otp_send_hint:"हम 4-अंकीय OTP भेजेंगे",mobile_number:"मोबाइल नंबर",send_otp:"OTP भेजें",secure_note:"सुरक्षित · OTP डेमो: 1234",enter_otp:"OTP दर्ज करें",otp_sub:"4-अंकीय कोड भेजा गया",verify_code:"नंबर सत्यापित करें",otp_desc:"4-अंकीय कोड दर्ज करें",no_code:"नहीं मिला?",resend:"OTP पुनः भेजें",verify_continue:"सत्यापित करें",select_region:"अपना क्षेत्र चुनें",region_sub:"नजदीकी गिग्स दिखाएंगे",your_profile:"आपकी प्रोफ़ाइल",profile_sub:"अपने बारे में बताएं",add_photo:"फ़ोटो जोड़ें",first_name:"पहला नाम",last_name:"अंतिम नाम",address:"पता",create_acc:"खाता बनाएं",please_complete:"ये सभी विवरण पूरे करें",required_note:"गिग्स के लिए आवश्यक",profile_complete:"प्रोफ़ाइल पूर्ण",personal_details:"व्यक्तिगत विवरण",phone_number:"फ़ोन नंबर",verified:"सत्यापित",personal_info:"व्यक्तिगत जानकारी",please_fill_sub:"विवरण जोड़ें",add_details:"विवरण जोड़ें",kyc_documents:"KYC दस्तावेज़",lock_msg:"KYC अनलॉक करने के लिए बुनियादी जानकारी पूरी करें।",aadhar:"आधार कार्ड",govt_id:"सरकारी पहचान",pan:"PAN कार्ड",tax_id:"कर पहचान",driving_license:"ड्राइविंग लाइसेंस",optional_id:"वैकल्पिक पहचान",payment_details:"भुगतान विवरण",pay_lock_msg:"भुगतान अनलॉक करने के लिए KYC पूरी करें।",bank_account:"बैंक खाता",acc_details:"खाता व IFSC",upi_id:"UPI ID",upi_linked:"भुगतान हैंडल",locked:"बंद",please_fill:"भरें",completed:"पूर्ण"},
+  te:{welcome:"స్వాగతం",tap_begin:"ప్రారంభించడానికి నొక్కండి",sign_up:"సైన్ అప్",log_in:"లాగిన్",choose_language:"మీ భాష ఎంచుకోండి",lang_hint:"సెట్టింగ్స్‌లో తర్వాత మార్చవచ్చు",continue:"కొనసాగించు",verify_mobile:"మొబైల్ ధృవీకరించండి",otp_send_hint:"4-అంకెల OTP పంపుతాం",mobile_number:"మొబైల్ నంబర్",send_otp:"OTP పంపండి",secure_note:"సురక్షితం · OTP డెమో: 1234",enter_otp:"OTP నమోదు చేయండి",otp_sub:"4-అంకెల కోడ్ పంపబడింది",verify_code:"నంబర్ ధృవీకరించండి",otp_desc:"4-అంకెల కోడ్ నమోదు చేయండి",no_code:"అందలేదా?",resend:"OTP మళ్ళీ పంపండి",verify_continue:"ధృవీకరించండి",select_region:"మీ ప్రాంతం ఎంచుకోండి",region_sub:"దగ్గరి గిగ్‌లు చూపిస్తాం",your_profile:"మీ ప్రొఫైల్",profile_sub:"మీ గురించి చెప్పండి",add_photo:"ఫోటో జోడించు",first_name:"మొదటి పేరు",last_name:"చివరి పేరు",address:"చిరునామా",create_acc:"ఖాతా తెరవండి",please_complete:"ఈ వివరాలు పూర్తి చేయండి",required_note:"గిగ్‌లకు అవసరం",profile_complete:"ప్రొఫైల్ పూర్తి",personal_details:"వ్యక్తిగత వివరాలు",phone_number:"ఫోన్ నంబర్",verified:"ధృవీకరించబడింది",personal_info:"వ్యక్తిగత సమాచారం",please_fill_sub:"వివరాలు జోడించు",add_details:"వివరాలు జోడించు",kyc_documents:"KYC పత్రాలు",lock_msg:"KYC అన్‌లాక్‌కు వ్యక్తిగత సమాచారం పూర్తి చేయండి.",aadhar:"ఆధార్ కార్డ్",govt_id:"ప్రభుత్వ గుర్తింపు",pan:"PAN కార్డ్",tax_id:"పన్ను గుర్తింపు",driving_license:"డ్రైవింగ్ లైసెన్స్",optional_id:"ఐచ్ఛిక గుర్తింపు",payment_details:"చెల్లింపు వివరాలు",pay_lock_msg:"చెల్లింపు అన్‌లాక్‌కు KYC పూర్తి చేయండి.",bank_account:"బ్యాంక్ ఖాతా",acc_details:"ఖాతా & IFSC",upi_id:"UPI ID",upi_linked:"చెల్లింపు హ్యాండిల్",locked:"లాక్",please_fill:"నమోదు చేయండి",completed:"పూర్తయింది"},
+  ta:{welcome:"வரவேற்கிறோம்",tap_begin:"தொடங்க தட்டவும்",sign_up:"பதிவு செய்க",log_in:"உள்நுழைக",choose_language:"உங்கள் மொழி தேர்வு",lang_hint:"பின்னர் அமைப்புகளில் மாற்றலாம்",continue:"தொடரவும்",verify_mobile:"மொபைல் சரிபார்ப்பு",otp_send_hint:"4 இலக்க OTP அனுப்புவோம்",mobile_number:"மொபைல் எண்",send_otp:"OTP அனுப்பு",secure_note:"பாதுகாப்பான · OTP டெமோ: 1234",enter_otp:"OTP உள்ளிடுக",otp_sub:"4 இலக்க குறியீடு அனுப்பப்பட்டது",verify_code:"எண்ணை சரிபார்க்கவும்",otp_desc:"4 இலக்க குறியீட்டை உள்ளிடுக",no_code:"கிடைக்கவில்லையா?",resend:"OTP மீண்டும் அனுப்பு",verify_continue:"சரிபார்க்கவும்",select_region:"உங்கள் பகுதி",region_sub:"அருகில் வேலைகள் காட்டுவோம்",your_profile:"சுயவிவரம்",profile_sub:"உங்களை பற்றி சொல்லுங்கள்",add_photo:"படம் சேர்",first_name:"முதல் பெயர்",last_name:"கடைசி பெயர்",address:"முகவரி",create_acc:"கணக்கு தொடங்கு",please_complete:"விவரங்களை முடிக்கவும்",required_note:"வேலை தொடங்க தேவை",profile_complete:"சுயவிவரம் முடிந்தது",personal_details:"தனிப்பட்ட விவரங்கள்",phone_number:"தொலைபேசி எண்",verified:"சரிபார்க்கப்பட்டது",personal_info:"தனிப்பட்ட தகவல்",please_fill_sub:"விவரங்களை சேர்",add_details:"விவரங்களை சேர்",kyc_documents:"KYC ஆவணங்கள்",lock_msg:"KYC திற தனிப்பட்ட தகவல் முடிக்கவும்.",aadhar:"ஆதார் கார்டு",govt_id:"அரசு அடையாளம்",pan:"PAN கார்டு",tax_id:"வரி அடையாளம்",driving_license:"ஓட்டுநர் உரிமம்",optional_id:"விருப்ப அடையாளம்",payment_details:"கட்டண விவரங்கள்",pay_lock_msg:"கட்டண திற KYC முடிக்கவும்.",bank_account:"வங்கி கணக்கு",acc_details:"கணக்கு & IFSC",upi_id:"UPI ID",upi_linked:"கட்டண ஹேண்டில்",locked:"பூட்டப்பட்டது",please_fill:"நிரப்பவும்",completed:"முடிந்தது"},
+  kn:{welcome:"ಸ್ವಾಗತ",tap_begin:"ಟ್ಯಾಪ್ ಮಾಡಿ",sign_up:"ಸೈನ್ ಅಪ್",log_in:"ಲಾಗಿನ್",choose_language:"ಭಾಷೆ ಆಯ್ಕೆ ಮಾಡಿ",lang_hint:"ಸೆಟ್ಟಿಂಗ್ಸ್‌ನಲ್ಲಿ ಬದಲಾಯಿಸಬಹುದು",continue:"ಮುಂದುವರೆ",verify_mobile:"ಮೊಬೈಲ್ ಪರಿಶೀಲಿಸಿ",otp_send_hint:"4 ಅಂಕೆಯ OTP ಕಳುಹಿಸುತ್ತೇವೆ",mobile_number:"ಮೊಬೈಲ್ ಸಂಖ್ಯೆ",send_otp:"OTP ಕಳುಹಿಸಿ",secure_note:"ಸುರಕ್ಷಿತ · OTP ಡೆಮೊ: 1234",enter_otp:"OTP ನಮೂದಿಸಿ",otp_sub:"4 ಅಂಕೆಯ ಕೋಡ್ ಕಳುಹಿಸಲಾಗಿದೆ",verify_code:"ಸಂಖ್ಯೆ ಪರಿಶೀಲಿಸಿ",otp_desc:"4 ಅಂಕೆಯ ಕೋಡ್ ನಮೂದಿಸಿ",no_code:"ಸ್ವೀಕರಿಸಲಿಲ್ಲವೇ?",resend:"OTP ಮರು ಕಳುಹಿಸಿ",verify_continue:"ಪರಿಶೀಲಿಸಿ",select_region:"ಪ್ರದೇಶ ಆಯ್ಕೆ",region_sub:"ಹತ್ತಿರದ ಗಿಗ್ ತೋರಿಸುತ್ತೇವೆ",your_profile:"ಪ್ರೊಫೈಲ್",profile_sub:"ನಿಮ್ಮ ಬಗ್ಗೆ ಹೇಳಿ",add_photo:"ಫೋಟೋ ಸೇರಿಸಿ",first_name:"ಮೊದಲ ಹೆಸರು",last_name:"ಕೊನೆಯ ಹೆಸರು",address:"ವಿಳಾಸ",create_acc:"ಖಾತೆ ರಚಿಸಿ",please_complete:"ವಿವರಗಳನ್ನು ಪೂರ್ಣಗೊಳಿಸಿ",required_note:"ಗಿಗ್‌ಗಳಿಗೆ ಅಗತ್ಯ",profile_complete:"ಪ್ರೊಫೈಲ್ ಪೂರ್ಣ",personal_details:"ವೈಯಕ್ತಿಕ ವಿವರಗಳು",phone_number:"ಫೋನ್ ಸಂಖ್ಯೆ",verified:"ಪರಿಶೀಲಿಸಲಾಗಿದೆ",personal_info:"ವ್ಯಕ್ತಿಗತ ಮಾಹಿತಿ",please_fill_sub:"ವಿವರಗಳನ್ನು ಸೇರಿಸಿ",add_details:"ವಿವರಗಳನ್ನು ಸೇರಿಸಿ",kyc_documents:"KYC ದಾಖಲೆಗಳು",lock_msg:"KYC ಅನ್‌ಲಾಕ್‌ಗೆ ಮಾಹಿತಿ ಪೂರ್ಣಗೊಳಿಸಿ.",aadhar:"ಆಧಾರ್ ಕಾರ್ಡ್",govt_id:"ಸರ್ಕಾರಿ ಗುರುತು",pan:"PAN ಕಾರ್ಡ್",tax_id:"ತೆರಿಗೆ ಗುರುತು",driving_license:"ಚಾಲನಾ ಪರವಾನಗಿ",optional_id:"ಐಚ್ಛಿಕ ಗುರುತು",payment_details:"ಪಾವತಿ ವಿವರಗಳು",pay_lock_msg:"ಪಾವತಿ ಅನ್‌ಲಾಕ್‌ಗೆ KYC ಪೂರ್ಣಗೊಳಿಸಿ.",bank_account:"ಬ್ಯಾಂಕ್ ಖಾತೆ",acc_details:"ಖಾತೆ & IFSC",upi_id:"UPI ID",upi_linked:"ಪಾವತಿ ಹ್ಯಾಂಡಲ್",locked:"ಲಾಕ್",please_fill:"ತುಂಬಿಸಿ",completed:"ಪೂರ್ಣ"},
+  ml:{welcome:"സ്വാഗതം",tap_begin:"ടാപ്പ് ചെയ്യുക",sign_up:"സൈൻ അപ്പ്",log_in:"ലോഗിൻ",choose_language:"ഭാഷ തിരഞ്ഞെടുക്കുക",lang_hint:"പിന്നീട് ക്രമീകരണങ്ങളിൽ മാറ്റാം",continue:"തുടരുക",verify_mobile:"മൊബൈൽ സ്ഥിരീകരിക്കുക",otp_send_hint:"4-അക്ക OTP അയക്കും",mobile_number:"മൊബൈൽ നമ്പർ",send_otp:"OTP അയക്കുക",secure_note:"സുരക്ഷിതം · OTP ഡെമോ: 1234",enter_otp:"OTP നൽകുക",otp_sub:"4-അക്ക കോഡ് അയച്ചു",verify_code:"നമ്പർ സ്ഥിരീകരിക്കുക",otp_desc:"4-അക്ക കോഡ് നൽകുക",no_code:"ലഭിച്ചില്ലേ?",resend:"OTP വീണ്ടും അയക്കുക",verify_continue:"സ്ഥിരീകരിക്കുക",select_region:"പ്രദേശം തിരഞ്ഞെടുക്കുക",region_sub:"അടുത്തുള്ള ഗിഗ്ഗുകൾ കാണിക്കും",your_profile:"പ്രൊഫൈൽ",profile_sub:"നിങ്ങളെക്കുറിച്ച് പറയൂ",add_photo:"ഫോട്ടോ ചേർക്കുക",first_name:"ആദ്യ പേര്",last_name:"അവസാന പേര്",address:"വിലാസം",create_acc:"അക്കൗണ്ട് ഉണ്ടാക്കുക",please_complete:"വിവരങ്ങൾ പൂർത്തിയാക്കുക",required_note:"ഗിഗ്ഗുകൾക്ക് ആവശ്യമാണ്",profile_complete:"പ്രൊഫൈൽ പൂർത്തി",personal_details:"വ്യക്തിഗത വിവരങ്ങൾ",phone_number:"ഫോൺ നമ്പർ",verified:"സ്ഥിരീകരിച്ചു",personal_info:"വ്യക്തിഗത വിവരം",please_fill_sub:"വിവരങ്ങൾ ചേർക്കുക",add_details:"വിവരങ്ങൾ ചേർക്കുക",kyc_documents:"KYC രേഖകൾ",lock_msg:"KYC അൺലോക്ക് ചെയ്യാൻ അടിസ്ഥാന വിവരം പൂർത്തിയാക്കുക.",aadhar:"ആധാർ കാർഡ്",govt_id:"സർക്കാർ ഐഡി",pan:"PAN കാർഡ്",tax_id:"നികുതി ഐഡി",driving_license:"ഡ്രൈവിംഗ് ലൈസൻസ്",optional_id:"ഐച്ഛിക ഐഡി",payment_details:"പേയ്‌മെന്റ് വിവരങ്ങൾ",pay_lock_msg:"പേയ്‌മെന്റ് അൺലോക്ക് ചെയ്യാൻ KYC പൂർത്തിയാക്കുക.",bank_account:"ബാങ്ക് അക്കൗണ്ട്",acc_details:"അക്കൗണ്ട് & IFSC",upi_id:"UPI ID",upi_linked:"പേയ്‌മെന്റ് ഹാൻഡിൽ",locked:"ലോക്ക്",please_fill:"നൽകുക",completed:"പൂർത്തിയായി"}
+};
+
+let lang='en', personalDone=false;
+const kycDone={aadhar:false,pan:false,dl:false};
+const payDone={bank:false,upi:false};
+
+function go(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
+function applyLang(l){const t=T[l]||T.en;document.querySelectorAll('[data-key]').forEach(el=>{const k=el.getAttribute('data-key');if(t[k]!==undefined)el.textContent=t[k]})}
+function selectLang(l,el){document.querySelectorAll('.lang-row').forEach(r=>r.classList.remove('selected'));el.classList.add('selected');lang=l;applyLang(l)}
+function selectCity(el){document.querySelectorAll('.city-btn').forEach(b=>b.classList.remove('selected'));el.classList.add('selected')}
+function otpNext(el,i){const bs=document.querySelectorAll('.otp-b');if(el.value&&i<3)bs[i+1].focus()}
+function previewAv(inp){
+  if(!inp.files[0])return;
+  const url=URL.createObjectURL(inp.files[0]);
+  // Profile screen avatar
+  const img=document.getElementById('av-img');
+  img.src=url;
+  img.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;z-index:3';
+  document.getElementById('av-cam-icon').style.display='none';
+  document.getElementById('av-sub-txt').style.display='none';
+  const circle=document.getElementById('av-circle');
+  if(circle){ circle.style.border='2px solid #7fff00'; }
+  // KYC header avatar
+  const kav=document.getElementById('kyc-avatar-img');
+  if(kav){ kav.src=url; kav.style.display='block'; }
+  const ki=document.getElementById('kyc-avatar-initials');
+  if(ki) ki.style.display='none';
+  // Personal info card mini-avatar
+  const piIcon=document.getElementById('pi-icon');
+  if(piIcon){
+    piIcon.style.border='2px solid #7fff00';
+    piIcon.style.background='transparent';
+    let piImg=document.getElementById('pi-avatar-img');
+    if(!piImg){
+      piImg=document.createElement('img');
+      piImg.id='pi-avatar-img';
+      piImg.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;z-index:3';
+      piIcon.appendChild(piImg);
+    }
+    piImg.src=url;
+  }
+}
+
+function createAccount(){
+  const fn=document.getElementById('fn').value.trim();
+  const ln=document.getElementById('ln').value.trim();
+  const ph=(document.getElementById('phone-inp').value.trim()||document.getElementById('login-phone-inp').value.trim()||'98765 43210');
+  document.getElementById('kyc-hi').textContent='HI, '+(fn||'User')+(ln?' '+ln:'')+'!';
+  const initials=(fn?fn[0].toUpperCase():'?')+(ln?ln[0].toUpperCase():'');
+  const ki=document.getElementById('kyc-avatar-initials');
+  if(ki) ki.textContent=initials;
+  // copy profile pic to kyc avatar if already uploaded
+  const avImg=document.getElementById('av-img');
+  if(avImg && avImg.src && avImg.src!==window.location.href){
+    const kav=document.getElementById('kyc-avatar-img');
+    if(kav){ kav.src=avImg.src; kav.style.cssText='display:block;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%'; }
+    if(ki) ki.style.display='none';
+    // pi-icon mini avatar
+    const piIcon=document.getElementById('pi-icon');
+    if(piIcon){
+      piIcon.style.border='2px solid #7fff00';
+      let piImg=document.getElementById('pi-avatar-img');
+      if(!piImg){ piImg=document.createElement('img'); piImg.id='pi-avatar-img'; piImg.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;z-index:3'; piIcon.appendChild(piImg); }
+      piImg.src=avImg.src;
+    }
+  }
+  document.getElementById('ph-val').textContent='+91 '+ph;
+  go('s-kyc');
+  if(fn||ln) markPersonalDone(fn,ln);
+  updateProgress();
+}
+
+function piClick(){if(!personalDone)go('s-profile')}
+
+function markPersonalDone(fn,ln){
+  personalDone=true;
+  const card=document.getElementById('pi-card');
+  card.className='personal-card filled';
+  card.onclick=()=>go('s-profile');
+  document.getElementById('pi-title').style.color='#000';
+  document.getElementById('pi-sub').textContent=(fn||'')+(ln?' '+ln:'');
+  document.getElementById('pi-sub').style.color='#3a5a00';
+  document.getElementById('pi-icon').className='icon-box';
+  document.getElementById('pi-icon').style.background='#0000001a';
+  document.getElementById('pi-icon').querySelector('i').style.color='#000';
+  document.getElementById('pi-right').innerHTML=
+    '<div class="done-tick"><i class="svg-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></i></svg></i></div>'+
+    '<button class="edit-sm" onclick="event.stopPropagation();go(\'s-profile\')"><i class="svg-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l10.5-10.5a2.83 2.83 0 0 0-4-4L4 16v4z"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l10.5-10.5a2.83 2.83 0 0 0-4-4L4 16v4z"/><line x1="13.5" y1="6.5" x2="17.5" y2="10.5"/></svg></i><line x1="13.5" y1="6.5" x2="17.5" y2="10.5"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l10.5-10.5a2.83 2.83 0 0 0-4-4L4 16v4z"/><line x1="13.5" y1="6.5" x2="17.5" y2="10.5"/></svg></i></svg></i></button>';
+  // Unlock KYC docs
+  document.getElementById('kyc-lock-notice').style.display='none';
+  ['aadhar','pan','dl'].forEach(k=>{
+    const el=document.getElementById('kd-'+k);
+    el.classList.remove('state-locked');
+    el.classList.add('state-fill');
+    el.style.opacity='1';
+    document.getElementById('kd-'+k+'-right').innerHTML=
+      '<span class="please-fill-pill">'+T[lang].please_fill+'</span>';
+  });
+  updateProgress();
+}
+
+/* ── SHEET CONFIG ── */
+const sheetConfig={
+  aadhar:{title:'Aadhar Card',icon:'ti-id',color:'#4a9eff',bg:'#1a2840',
+    fields:[{id:'aadhar-num',label:'Aadhar Number',placeholder:'XXXX XXXX XXXX',maxlen:14,hint:'12-digit Aadhar number'}],
+    uploads:[{id:'aadhar-front',label:'Front Side',hint:'JPG, PNG or PDF'},{id:'aadhar-back',label:'Back Side',hint:'JPG, PNG or PDF'}]},
+  pan:{title:'PAN Card',icon:'ti-file-certificate',color:'#e8943a',bg:'#2a1f10',
+    fields:[{id:'pan-num',label:'PAN Number',placeholder:'ABCDE1234F',maxlen:10,hint:'10-character PAN'}],
+    uploads:[{id:'pan-front',label:'PAN Card Image',hint:'JPG, PNG or PDF'}]},
+  dl:{title:'Driving License',icon:'ti-car',color:'#e05588',bg:'#2a1020',
+    fields:[{id:'dl-num',label:'License Number',placeholder:'XX-00-0000-0000000',maxlen:18,hint:'As printed on your license'}],
+    uploads:[{id:'dl-front',label:'Front Side',hint:'JPG, PNG or PDF'},{id:'dl-back',label:'Back Side',hint:'JPG, PNG or PDF'}]},
+  bank:{title:'Bank Account',icon:'ti-building-bank',color:'#4ccc7a',bg:'#102a18',
+    fields:[{id:'bank-acc',label:'Account Number',placeholder:'Enter account number',maxlen:18,hint:''},
+            {id:'bank-ifsc',label:'IFSC Code',placeholder:'XXXXXX00000',maxlen:11,hint:'11-character IFSC'},
+            {id:'bank-name',label:'Account Holder Name',placeholder:'As on bank records',maxlen:60,hint:''}],
+    uploads:[]},
+  upi:{title:'UPI ID',icon:'ti-qrcode',color:'#8877ee',bg:'#1a1040',
+    fields:[{id:'upi-id',label:'UPI ID / VPA',placeholder:'yourname@upi',maxlen:50,hint:'e.g. name@okaxis, name@paytm'}],
+    uploads:[{id:'upi-qr',label:'UPI QR Code (optional)',hint:'Screenshot of your UPI QR from any payment app'}]}
+};
+
+let activeSheet=null;
+
+const uploadedFiles={};
+
+function kycTap(type){
+  if(!personalDone) return;
+  openSheet(type,'kyc');
+}
+
+function payTap(type){
+  if(!Object.values(kycDone).every(Boolean)) return;
+  openSheet(type,'pay');
+}
+
+function openSheet(type,category){
+  activeSheet={type,category};
+  const cfg=sheetConfig[type];
+  const sh=document.getElementById('detail-sheet');
+  const cont=document.getElementById('sheet-content');
+  const reqUploads=cfg.uploads.filter(u=>!u.label.toLowerCase().includes('optional'));
+
+  let html=`
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div class="sheet-icon-wrap" style="background:${cfg.bg}">
+        <i class="ti ${cfg.icon}" style="color:${cfg.color};font-size:24px"></i>
+      </div>
+      <div class="sheet-header-text">
+        <div class="sheet-title">${cfg.title}</div>
+        <div class="sheet-subtitle">Fill in your details below</div>
+      </div>
+      <button class="sheet-close" onclick="closeSheet()"><i class="svg-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></i><line x1="6" y1="6" x2="18" y2="18"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></i></svg></i></button>
+    </div>`;
+
+  cfg.fields.forEach(f=>{
+    html+=`
+      <div class="sheet-field-group">
+        <div class="sheet-field-label">${f.label}</div>
+        <input class="sheet-inp" id="${f.id}" type="text" placeholder="${f.placeholder}" maxlength="${f.maxlen}" autocomplete="off" oninput="validateField(this,'${f.id}')"/>
+        <div class="field-error" id="err-${f.id}"></div>
+        ${f.hint?`<div class="sheet-field-hint">${f.hint}</div>`:''}
+      </div>`;
+  });
+
+  if(cfg.uploads.length){
+    html+=`<div class="sheet-divider"><span>Document Upload</span></div>`;
+    cfg.uploads.forEach(u=>{
+      const isOptional=u.label.toLowerCase().includes('optional');
+      const done=uploadedFiles[u.id];
+      html+=`
+        <div class="sheet-field-group">
+          <div class="sheet-field-label">${u.label}</div>
+          <div class="upload-zone${done?' uz-filled':''}" id="uz-${u.id}" onclick="document.getElementById('uf-${u.id}').click()">
+            <div class="uz-inner" id="uz-inner-${u.id}">
+              ${done
+                ?`<i class="svg-icon uz-icon" style="color:#7fff00"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-5"/></svg></i><path d="M8 12l3 3 5-5"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-5"/></svg></i></svg></i><div class="uz-text uz-done">Uploaded ✓</div><div class="uz-hint" style="color:#555">Tap to replace</div>`
+                :`<i class="svg-icon uz-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 18V12m0 0l-3 3m3-3l3 3"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 18V12m0 0l-3 3m3-3l3 3"/><path d="M6.5 17A4.5 4.5 0 0 1 7 8a5 5 0 0 1 9.9-1A4.5 4.5 0 0 1 17.5 17"/></svg></i><path d="M6.5 17A4.5 4.5 0 0 1 7 8a5 5 0 0 1 9.9-1A4.5 4.5 0 0 1 17.5 17"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 18V12m0 0l-3 3m3-3l3 3"/><path d="M6.5 17A4.5 4.5 0 0 1 7 8a5 5 0 0 1 9.9-1A4.5 4.5 0 0 1 17.5 17"/></svg></i></svg></i><div class="uz-text">Tap to upload</div><div class="uz-hint">${u.hint}</div>`
+              }
+            </div>
+          </div>
+          <input type="file" id="uf-${u.id}" accept="image/*,.pdf" style="display:none" onchange="handleUpload(this,'${u.id}')"/>
+          ${!isOptional&&!done?`<div class="req-hint" id="req-hint-${u.id}">⚠ Required — upload this document to continue</div>`:''}
+        </div>`;
+    });
+  }
+
+  const btnDisabled=reqUploads.length>0 && !reqUploads.every(u=>uploadedFiles[u.id]);
+  html+=`
+    <button class="sheet-save-btn${btnDisabled?' btn-disabled':''}" id="sheet-save-btn" onclick="saveSheet()" ${btnDisabled?'disabled':''}>
+      <i class="svg-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-5"/></svg></i><path d="M8 12l3 3 5-5"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-5"/></svg></i></svg></i> Save & Continue
+    </button>
+    ${btnDisabled?`<div class="sheet-upload-warning" id="sheet-upload-warning">Upload all required documents above to continue</div>`:''}
+    <div style="height:16px"></div>`;
+
+  cont.innerHTML=html;
+  sh.classList.add('open');
+  document.getElementById('sheet-overlay').classList.add('open');
+}
+
+function closeSheet(){
+  document.getElementById('detail-sheet').classList.remove('open');
+  document.getElementById('sheet-overlay').classList.remove('open');
+  activeSheet=null;
+}
+
+function checkSaveReady(){
+  if(!activeSheet) return;
+  const cfg=sheetConfig[activeSheet.type];
+  const reqUploads=cfg.uploads.filter(u=>!u.label.toLowerCase().includes('optional'));
+  if(!reqUploads.length) return;
+  const allDone=reqUploads.every(u=>uploadedFiles[u.id]);
+  const btn=document.getElementById('sheet-save-btn');
+  if(!btn) return;
+  btn.disabled=!allDone;
+  btn.classList.toggle('btn-disabled',!allDone);
+  const warn=document.getElementById('sheet-upload-warning');
+  if(warn) warn.style.display=allDone?'none':'block';
+}
+
+function handleUpload(inp,uid){
+  if(!inp.files[0]) return;
+  const file=inp.files[0];
+  uploadedFiles[uid]=true;
+  const zone=document.getElementById('uz-inner-'+uid);
+  const zoneEl=document.getElementById('uz-'+uid);
+  const isPdf=file.type==='application/pdf';
+  if(isPdf){
+    zone.innerHTML=`<i class="svg-icon uz-icon" style="color:#e05555"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M5 12V5a2 2 0 0 1 2-2h7l5 5v4"/><path d="M5 18h1.5a1.5 1.5 0 0 0 0-3H5v6"/><path d="M17 18h2m-4-3v6"/><path d="M11 15a2 2 0 0 1 2 2v1a2 2 0 0 1-2 2h-1v-5h1"/></svg></i><path d="M5 12V5a2 2 0 0 1 2-2h7l5 5v4"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M5 12V5a2 2 0 0 1 2-2h7l5 5v4"/><path d="M5 18h1.5a1.5 1.5 0 0 0 0-3H5v6"/><path d="M17 18h2m-4-3v6"/><path d="M11 15a2 2 0 0 1 2 2v1a2 2 0 0 1-2 2h-1v-5h1"/></svg></i><path d="M5 18h1.5a1.5 1.5 0 0 0 0-3H5v6"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M5 12V5a2 2 0 0 1 2-2h7l5 5v4"/><path d="M5 18h1.5a1.5 1.5 0 0 0 0-3H5v6"/><path d="M17 18h2m-4-3v6"/><path d="M11 15a2 2 0 0 1 2 2v1a2 2 0 0 1-2 2h-1v-5h1"/></svg></i><path d="M17 18h2m-4-3v6"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M5 12V5a2 2 0 0 1 2-2h7l5 5v4"/><path d="M5 18h1.5a1.5 1.5 0 0 0 0-3H5v6"/><path d="M17 18h2m-4-3v6"/><path d="M11 15a2 2 0 0 1 2 2v1a2 2 0 0 1-2 2h-1v-5h1"/></svg></i><path d="M11 15a2 2 0 0 1 2 2v1a2 2 0 0 1-2 2h-1v-5h1"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M5 12V5a2 2 0 0 1 2-2h7l5 5v4"/><path d="M5 18h1.5a1.5 1.5 0 0 0 0-3H5v6"/><path d="M17 18h2m-4-3v6"/><path d="M11 15a2 2 0 0 1 2 2v1a2 2 0 0 1-2 2h-1v-5h1"/></svg></i></svg></i>
+      <div class="uz-text uz-done">${file.name}</div>
+      <div class="uz-hint" style="color:#7fff00">PDF uploaded ✓</div>`;
+  } else {
+    const reader=new FileReader();
+    reader.onload=e=>{
+      zone.innerHTML=`<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:10px;position:absolute;inset:0"/>
+        <div style="position:absolute;bottom:6px;right:8px;background:#0008;border-radius:8px;padding:3px 8px;font-size:10px;color:#7fff00;font-weight:700">✓ Uploaded</div>`;
+      zone.style.position='relative';
+      checkSaveReady();
+    };
+    reader.readAsDataURL(file);
+    return;
+  }
+  zoneEl.style.borderColor='#7fff00';
+  zoneEl.classList.add('uz-filled');
+  const hint=document.getElementById('req-hint-'+uid);
+  if(hint) hint.style.display='none';
+  checkSaveReady();
+}
+
+function saveSheet(){
+  if(!activeSheet) return;
+  const {type,category}=activeSheet;
+  closeSheet();
+  // mark done
+  if(category==='kyc') kycDone[type]=true;
+  else payDone[type]=true;
+  const cardId=category==='kyc'?'kd-'+type:'kd-'+type;
+  const el=document.getElementById(cardId);
+  el.classList.remove('state-fill');
+  el.classList.add('state-done');
+  document.getElementById(cardId+'-right').innerHTML=
+    '<div class="done-right">'+
+      '<div class="done-tick-sm"><i class="svg-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></i></svg></i></div>'+
+      '<button class="edit-doc" onclick="event.stopPropagation();openSheet(\''+type+'\',\''+category+'\')"><i class="svg-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l10.5-10.5a2.83 2.83 0 0 0-4-4L4 16v4z"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l10.5-10.5a2.83 2.83 0 0 0-4-4L4 16v4z"/><line x1="13.5" y1="6.5" x2="17.5" y2="10.5"/></svg></i><line x1="13.5" y1="6.5" x2="17.5" y2="10.5"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l10.5-10.5a2.83 2.83 0 0 0-4-4L4 16v4z"/><line x1="13.5" y1="6.5" x2="17.5" y2="10.5"/></svg></i></svg></i></button>'+
+    '</div>';
+  if(category==='kyc' && Object.values(kycDone).every(Boolean)) unlockPayment();
+  updateProgress();
+}
+
+function unlockPayment(){
+  document.getElementById('pay-lock-notice').style.display='none';
+  ['bank','upi'].forEach(k=>{
+    const el=document.getElementById('kd-'+k);
+    el.classList.remove('state-locked');
+    el.classList.add('state-fill');
+    el.style.opacity='1';
+    document.getElementById('kd-'+k+'-right').innerHTML=
+      '<span class="please-fill-pill">'+T[lang].please_fill+'</span>';
+  });
+}
+
+function updateProgress(){
+  let done=1; // phone always done
+  if(personalDone) done++;
+  done+=Object.values(kycDone).filter(Boolean).length;
+  done+=Object.values(payDone).filter(Boolean).length;
+  const total=7;
+  const pct=Math.round(done/total*100);
+  document.getElementById('kpbar').style.width=pct+'%';
+  document.getElementById('kpct').textContent=pct+'%';
+}
+
+
+const fieldRules={
+  'aadhar-num':{pattern:/^[0-9]{12}$/, fmt:'XXXX XXXX XXXX', normalize:v=>v.replace(/\D/g,'').replace(/(\d{4})(?=\d)/g,'$1 ').substring(0,14), msg:'Must be 12 digits'},
+  'pan-num':{pattern:/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/, fmt:'ABCDE1234F', normalize:v=>v.toUpperCase().replace(/[^A-Z0-9]/g,'').substring(0,10), msg:'Format: ABCDE1234F (5 letters, 4 digits, 1 letter)'},
+  'dl-num':{pattern:/^[A-Z]{2}[0-9]{2}[0-9]{4}[0-9]{7}$|^[A-Z]{2}-[0-9]{2}-[0-9]{4}-[0-9]{7}$/, fmt:'XX-00-0000-0000000', normalize:v=>v.toUpperCase(), msg:'Format: ST-RR-YYYY-NNNNNNN (e.g. TS-06-2020-1234567)'},
+  'bank-acc':{pattern:/^[0-9]{9,18}$/, fmt:'9–18 digits', normalize:v=>v.replace(/\D/g,'').substring(0,18), msg:'Must be 9–18 digits'},
+  'bank-ifsc':{pattern:/^[A-Z]{4}0[A-Z0-9]{6}$/, fmt:'ABCD0123456', normalize:v=>v.toUpperCase().replace(/[^A-Z0-9]/g,'').substring(0,11), msg:'Format: 4 letters, 0, 6 alphanumeric'},
+  'bank-name':{pattern:/^[A-Za-z ]{2,60}$/, fmt:'Full name', normalize:v=>v, msg:'Letters and spaces only, 2–60 chars'},
+  'upi-id':{pattern:/^[a-zA-Z0-9._-]+@[a-zA-Z0-9]+$/, fmt:'name@upi', normalize:v=>v.trim(), msg:'Format: yourname@okaxis or name@paytm'},
+};
+
+function validateField(inp, fid){
+  const rule=fieldRules[fid];
+  if(!rule) return;
+  // normalize (auto-format) the value
+  const raw=inp.value;
+  const normed=rule.normalize(raw);
+  if(normed!==raw) { inp.value=normed; }
+  const val=inp.value.replace(/\s/g,''); // strip spaces for pattern test
+  const err=document.getElementById('err-'+fid);
+  if(!err) return;
+  if(inp.value.length===0){
+    inp.classList.remove('inp-error','inp-ok');
+    err.style.display='none'; err.textContent='';
+    return;
+  }
+  const testVal = fid==='aadhar-num' ? inp.value.replace(/\s/g,'') : inp.value;
+  if(rule.pattern.test(testVal)){
+    inp.classList.remove('inp-error'); inp.classList.add('inp-ok');
+    err.style.display='none'; err.textContent='';
+  } else {
+    inp.classList.remove('inp-ok'); inp.classList.add('inp-error');
+    err.textContent='⚠ '+rule.msg;
+    err.style.display='block';
+  }
+}
+
+function selectCityCard(el){document.querySelectorAll(".city-card").forEach(c=>c.classList.remove("selected"));el.classList.add("selected")}
+function filterCities(v){const q=v.toLowerCase();document.querySelectorAll(".city-card").forEach(c=>{const name=(c.getAttribute("data-city")||"").toLowerCase();c.classList.toggle("hidden",q.length>0&&!name.includes(q))})}
+function loginOtpCheck(){
+  const boxes=document.querySelectorAll('#s-login-otp .otp-b');
+  document.getElementById('login-verify-btn').disabled=[...boxes].some(b=>!b.value);
+}
+function loginVerify(){
+  // Show KYC dashboard directly for returning user
+  const ph=document.getElementById('login-phone-inp').value.trim()||'98765 43210';
+  document.getElementById('ph-val').textContent='+91 '+ph;
+  go('s-kyc');
+  updateProgress();
+}
+
+applyLang("en");
+</script>
+<!-- BOTTOM SHEET OVERLAY -->
+<div id="sheet-overlay" onclick="closeSheet()"></div>
+
+<!-- BOTTOM SHEET -->
+<div id="detail-sheet">
+  <div id="sheet-content"></div>
+</div>
+
+</body>
+</html>

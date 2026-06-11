@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+<title>GigBridge Worker Onboarding – Preview</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #050507;
+    font-family: -apple-system, 'Inter', sans-serif;
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ── Phone shell ── */
+  .shell {
+    width: 390px;
+    min-height: 844px;
+    background: #0A0A0F;
+    border-radius: 44px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 0 0 10px #1a1a1a, 0 40px 100px rgba(0,0,0,.9), 0 0 60px rgba(132,245,66,.08);
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Screen (slides) ── */
+  .screen { display: none; flex-direction: column; min-height: 844px; }
+  .screen.active { display: flex; }
+
+  /* ── Shared atoms ── */
+  .green-btn {
+    width: 100%; height: 56px;
+    background: #84F542;
+    color: #000;
+    font-weight: 900;
+    font-size: 15px;
+    border: none; border-radius: 16px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    box-shadow: 0 0 24px rgba(132,245,66,.35);
+    transition: transform .12s, opacity .12s;
+  }
+  .green-btn:hover { opacity: .92; }
+  .green-btn:active { transform: scale(.97); }
+  .green-btn:disabled { opacity: .3; box-shadow: none; cursor: not-allowed; }
+
+  .back-btn {
+    width: 36px; height: 36px;
+    background: rgba(255,255,255,.05);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 18px;
+    flex-shrink: 0;
+  }
+  .back-btn:hover { background: rgba(255,255,255,.1); }
+
+  header.page-header {
+    padding: 14px 16px;
+    display: flex; align-items: center; gap: 12px;
+    border-bottom: 1px solid rgba(255,255,255,.05);
+    flex-shrink: 0;
+  }
+  header.page-header .title { font-weight: 700; font-size: 14px; }
+  header.page-header .sub { font-size: 11px; color: #64748b; }
+
+  .footer-bar {
+    padding: 16px 20px;
+    border-top: 1px solid rgba(255,255,255,.05);
+    flex-shrink: 0;
+  }
+
+  .scroll-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+  }
+  .scroll-body::-webkit-scrollbar { width: 0; }
+
+  /* ── Labels ── */
+  .section-label {
+    font-size: 10px; font-weight: 900;
+    text-transform: uppercase; letter-spacing: .18em;
+    color: #475569; margin-left: 4px; margin-bottom: 10px;
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: #11141C;
+    border: 1px solid rgba(255,255,255,.05);
+    border-radius: 18px;
+    padding: 16px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .card-icon {
+    width: 44px; height: 44px;
+    background: #1A1E2A;
+    border: 1px solid rgba(255,255,255,.06);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: 20px;
+  }
+  .card-body { flex: 1; min-width: 0; }
+  .card-title { font-weight: 700; font-size: 14px; }
+  .card-sub { font-size: 11px; color: #64748b; margin-top: 1px; }
+
+  /* Pill badges */
+  .pill-fill {
+    background: #3A2410; padding: 5px 10px;
+    border-radius: 999px; border: 1px solid rgba(245,166,35,.25);
+    color: #F5A623; font-size: 9px; font-weight: 900;
+    text-transform: uppercase; letter-spacing: .1em; white-space: nowrap;
+  }
+  .pill-verified {
+    background: rgba(132,245,66,.1); padding: 4px 10px;
+    border-radius: 999px; border: 1px solid rgba(132,245,66,.2);
+    color: #84F542; font-size: 10px; font-weight: 900;
+    text-transform: uppercase; display: flex; align-items: center; gap: 4px;
+  }
+  .pill-locked {
+    color: #475569; font-size: 10px; font-weight: 900;
+    text-transform: uppercase; display: flex; align-items: center; gap: 4px;
+  }
+  .done-circle {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: #84F542; display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+  .edit-circle {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.06);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 13px; flex-shrink: 0;
+  }
+
+  /* ── Input fields ── */
+  .field-label {
+    font-size: 10px; font-weight: 900; text-transform: uppercase;
+    letter-spacing: .15em; color: #475569; margin-bottom: 6px; display: block;
+  }
+  input[type=text], input[type=tel], textarea {
+    width: 100%; background: #11141C;
+    border: 1px solid rgba(255,255,255,.07);
+    border-radius: 12px; color: #fff;
+    font-weight: 700; font-size: 14px;
+    padding: 0 16px; outline: none;
+    transition: border-color .2s;
+  }
+  input[type=text], input[type=tel] { height: 54px; }
+  textarea { padding: 14px 16px; resize: none; font-family: inherit; min-height: 100px; }
+  input:focus, textarea:focus { border-color: rgba(132,245,66,.5); }
+
+  /* OTP boxes */
+  .otp-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; }
+  .otp-box {
+    height: 64px; background: #11141C;
+    border: 2px solid rgba(255,255,255,.08);
+    border-radius: 16px; color: #fff;
+    font-size: 26px; font-weight: 900; text-align: center;
+    outline: none; transition: border-color .2s;
+  }
+  .otp-box:focus { border-color: #84F542; }
+
+  /* ── Splash ── */
+  #splash {
+    background: radial-gradient(ellipse at 50% 30%, #0D3520 0%, #060810 70%);
+    align-items: center; justify-content: space-between; padding: 60px 32px 50px;
+  }
+  .splash-logo {
+    width: 96px; height: 96px;
+    background: linear-gradient(135deg,#84F542,#22C55E);
+    border-radius: 28px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 48px;
+    box-shadow: 0 0 40px rgba(132,245,66,.4);
+    margin-bottom: 28px;
+  }
+  .splash-center { display: flex; flex-direction: column; align-items: center; flex: 1; justify-content: center; }
+  .splash-welcome { font-size: 11px; font-weight: 700; letter-spacing: .3em; color: rgba(255,255,255,.35); text-transform: uppercase; margin-bottom: 10px; }
+  .splash-name { font-size: 40px; font-weight: 900; margin-bottom: 8px; }
+  .splash-name span { color: #84F542; }
+  .splash-sub { color: #64748b; font-size: 15px; }
+
+  /* ── Auth choice ── */
+  #auth-choice {
+    background: radial-gradient(ellipse at 50% 0%, #0D1F1A 0%, #0A0A0F 60%);
+    padding: 0;
+  }
+  .auth-top { padding: 20px 24px 0; }
+  .auth-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 24px; gap: 32px; }
+  .auth-title { text-align: center; }
+  .auth-title h1 { font-size: 38px; font-weight: 900; }
+  .auth-title p { color: #64748b; margin-top: 6px; }
+  .auth-btn {
+    width: 100%; height: 66px;
+    border-radius: 20px; border: none;
+    display: flex; align-items: center; gap: 18px; padding: 0 20px;
+    cursor: pointer; transition: transform .12s, opacity .12s;
+  }
+  .auth-btn:active { transform: scale(.98); }
+  .auth-btn-signup { background: #84F542; box-shadow: 0 0 24px rgba(132,245,66,.3); }
+  .auth-btn-login { background: #151820; border: 1px solid rgba(255,255,255,.1); }
+  .auth-btn-icon {
+    width: 42px; height: 42px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;
+  }
+  .signup-icon-bg { background: rgba(0,0,0,.2); }
+  .login-icon-bg { background: #1E2230; }
+  .auth-btn-text .eyebrow { font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: .12em; }
+  .auth-btn-signup .eyebrow { color: rgba(0,0,0,.55); }
+  .auth-btn-login .eyebrow { color: #475569; }
+  .auth-btn-text .name { font-size: 20px; font-weight: 900; }
+  .auth-btn-signup .name { color: #000; }
+  .auth-btn-login .name { color: #fff; }
+  .auth-footer { padding: 16px 24px 28px; text-align: center; font-size: 10px; color: #334155; }
+
+  /* ── Language ── */
+  #language .lang-list { padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; flex:1; overflow-y:auto; }
+  .lang-item {
+    width: 100%; padding: 18px 20px;
+    background: #11141C; border: 2px solid rgba(255,255,255,.05);
+    border-radius: 18px; display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer; transition: all .15s; text-align: left;
+  }
+  .lang-item.selected { border-color: #84F542; background: rgba(132,245,66,.05); }
+  .lang-item .lang-native { font-size: 18px; font-weight: 900; }
+  .lang-item.selected .lang-native { color: #84F542; }
+  .lang-item .lang-en { font-size: 12px; color: #475569; font-weight: 500; margin-top: 2px; }
+  .lang-check {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: #84F542; display: flex; align-items: center; justify-content: center;
+    font-size: 14px; flex-shrink: 0;
+  }
+
+  /* ── Phone ── */
+  #phone .phone-card, #login-phone .phone-card {
+    margin: 32px 20px 0;
+    background: #11141C; border: 1px solid rgba(255,255,255,.05);
+    border-radius: 20px; padding: 24px;
+  }
+  .phone-row { display: flex; gap: 10px; margin-bottom: 18px; }
+  .phone-prefix {
+    display: flex; align-items: center; gap: 8px;
+    padding: 0 16px; height: 54px;
+    background: #1A1E2A; border: 1px solid rgba(255,255,255,.05);
+    border-radius: 12px; font-weight: 900; font-size: 14px; color: #cbd5e1;
+    white-space: nowrap;
+  }
+  .phone-prefix .ph-icon { color: #84F542; font-size: 16px; }
+  .secure-note { margin-top: 10px; text-align: center; font-size: 10px; color: #334155; display: flex; align-items: center; justify-content: center; gap: 4px; }
+  .secure-note .g { color: #84F542; }
+
+  /* ── OTP ── */
+  #otp .otp-body, #login-otp .otp-body { flex:1; display:flex; flex-direction:column; padding: 24px 20px; }
+  .otp-hint { color: #94a3b8; text-align: center; margin-bottom: 28px; font-weight: 500; }
+  .resend { text-align: center; font-size: 12px; color: #475569; margin-top: 20px; }
+  .resend button { color: #84F542; font-weight: 700; background: none; border: none; cursor: pointer; }
+
+  /* ── City / Region ── */
+  #region .search-wrap {
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255,255,255,.05);
+  }
+  .search-box {
+    display: flex; align-items: center; gap: 8px;
+    background: #11141C; border: 1px solid rgba(255,255,255,.05);
+    border-radius: 12px; padding: 0 14px; height: 44px;
+  }
+  .search-box span { color: #475569; font-size: 15px; }
+  .search-box input {
+    flex: 1; background: transparent; border: none;
+    height: 100%; font-size: 13px; color: #fff; font-weight: 500; padding: 0;
+  }
+  .search-box input:focus { outline: none; border: none; }
+  #region .city-grid {
+    flex: 1; overflow-y: auto; padding: 14px 16px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  }
+  .city-card {
+    background: #11141C; border: 2px solid rgba(255,255,255,.05);
+    border-radius: 18px; padding: 14px 12px;
+    cursor: pointer; text-align: left; transition: all .15s;
+  }
+  .city-card:hover { background: rgba(255,255,255,.04); }
+  .city-card.selected { border-color: #84F542; background: rgba(132,245,66,.05); }
+  .city-monument { font-size: 30px; margin-bottom: 8px; line-height: 1; }
+  .city-name { font-weight: 700; font-size: 13px; }
+  .city-card.selected .city-name { color: #84F542; }
+  .city-state { font-size: 10px; color: #475569; margin-top: 2px; }
+  .city-landmark { font-size: 9px; color: #334155; margin-top: 2px; font-style: italic; }
+
+  /* ── Profile form ── */
+  #profile .profile-body { flex:1; overflow-y:auto; padding: 24px 20px; }
+  .avatar-wrap { display: flex; flex-direction: column; align-items: center; margin-bottom: 28px; }
+  .avatar-circle {
+    width: 96px; height: 96px; border-radius: 50%;
+    background: #11141C; border: 2px dashed rgba(132,245,66,.35);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; position: relative; overflow: hidden;
+    transition: border-color .2s;
+  }
+  .avatar-circle:hover { border-color: rgba(132,245,66,.8); }
+  .avatar-circle img { width:100%; height:100%; object-fit:cover; }
+  .avatar-cam { font-size: 28px; color: rgba(132,245,66,.5); }
+  .avatar-cam-badge {
+    position: absolute; bottom: 0; right: 0;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: #84F542; display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+  }
+  .avatar-hint { font-size: 11px; color: #475569; margin-top: 8px; font-weight: 500; }
+  .name-row { display: flex; gap: 12px; margin-bottom: 18px; }
+  .name-row > div { flex: 1; }
+
+  /* ── Dashboard ── */
+  #dashboard { overflow: hidden; }
+  .dash-header {
+    padding: 24px 20px 28px;
+    border-radius: 0 0 40px 40px;
+    background: linear-gradient(135deg, #0D2B1A 0%, #0A1628 100%);
+    flex-shrink: 0; position: relative; overflow: hidden;
+  }
+  .dash-header::before {
+    content:''; position:absolute; inset:0;
+    background: rgba(132,245,66,.03); pointer-events:none;
+  }
+  .dash-inner { display:flex; align-items:flex-start; gap:14px; position:relative; z-index:1; }
+  .dash-avatar {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: #1A2A1A; border: 2px solid rgba(132,245,66,.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; overflow: hidden; flex-shrink: 0;
+  }
+  .dash-avatar img { width:100%; height:100%; object-fit:cover; }
+  .dash-info { flex:1; min-width:0; }
+  .dash-hi { font-size: 11px; color: rgba(132,245,66,.7); font-weight: 700; text-transform: uppercase; letter-spacing: .15em; }
+  .dash-name { font-size: 18px; font-weight: 900; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dash-sub { font-size: 11px; color: #475569; margin-top: 2px; }
+  .progress-row { display:flex; align-items:center; gap:10px; margin-top:14px; }
+  .progress-track { flex:1; height:6px; background:rgba(255,255,255,.1); border-radius:999px; overflow:hidden; }
+  .progress-fill { height:100%; background:#84F542; border-radius:999px; transition: width .7s ease; }
+  .progress-pct { font-size:10px; font-weight:900; color:#84F542; flex-shrink:0; }
+  .progress-label { font-size:9px; color:#334155; font-weight:700; text-transform:uppercase; letter-spacing:.1em; margin-top:4px; }
+  .dash-body { flex:1; overflow-y:auto; padding: 20px 16px 24px; }
+  .dash-body::-webkit-scrollbar { width:0; }
+  .dash-section { margin-bottom: 28px; }
+  .item-card {
+    background: #11141C; border: 1px solid rgba(255,255,255,.05);
+    border-radius: 18px; padding: 14px 16px;
+    display:flex; align-items:center; gap:14px;
+    cursor:pointer; transition: transform .1s; width:100%; text-align:left;
+  }
+  .item-card:hover { background: #13172A; }
+  .item-card:active { transform: scale(.98); }
+  .item-card.locked { opacity: .3; cursor: not-allowed; pointer-events: none; }
+  .item-card + .item-card { margin-top: 10px; }
+  .item-icon {
+    width: 44px; height: 44px; background: #1A1E2A;
+    border: 1px solid rgba(255,255,255,.06);
+    border-radius: 12px; display:flex; align-items:center; justify-content:center;
+    font-size: 20px; flex-shrink:0;
+  }
+  .item-body { flex:1; min-width:0; }
+  .item-title { font-weight: 700; font-size: 14px; }
+  .item-sub { font-size: 11px; color: #475569; margin-top: 2px; }
+  .lock-banner {
+    background: rgba(255,255,255,.03); border: 1px dashed rgba(255,255,255,.08);
+    border-radius: 12px; padding: 12px 14px;
+    display: flex; align-items:flex-start; gap: 10px; margin-bottom: 10px;
+    font-size: 11px; color: #475569; font-weight: 500; line-height: 1.5;
+  }
+  .lock-banner span { font-size: 14px; flex-shrink:0; }
+  .phone-verified-card {
+    background: rgba(12,31,12,.9); border: 1px solid rgba(132,245,66,.15);
+    border-radius: 18px; padding: 14px 16px;
+    display:flex; align-items:center; gap:14px; margin-bottom:10px;
+  }
+  .ph-card-icon { width:44px; height:44px; background:rgba(132,245,66,.1); border:1px solid rgba(132,245,66,.2); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:20px; }
+
+  /* ── KYC overlay ── */
+  .kyc-overlay {
+    display: none; position: absolute; inset: 0; z-index: 100;
+    background: #0A0A0F; flex-direction: column;
+  }
+  .kyc-overlay.open { display: flex; }
+  .kyc-scroll { flex:1; overflow-y:auto; padding:24px 20px; }
+  .upload-zone {
+    width:100%; height:110px; border: 2px dashed rgba(255,255,255,.1);
+    border-radius: 14px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:8px; cursor:pointer; transition: all .2s;
+  }
+  .upload-zone:hover { border-color: rgba(132,245,66,.4); background: rgba(132,245,66,.04); }
+  .upload-zone span.icon { font-size: 24px; }
+  .upload-zone p { font-size: 13px; color: #94a3b8; font-weight: 700; }
+  .upload-zone small { font-size: 11px; color: #475569; }
+  .file-preview {
+    display:flex; align-items:center; gap:12px; padding:14px;
+    background: rgba(132,245,66,.08); border:1px solid rgba(132,245,66,.25);
+    border-radius: 14px;
+  }
+  .file-preview-icon { width:40px;height:40px; background:rgba(132,245,66,.15); border-radius:10px; display:flex;align-items:center;justify-content:center; font-size:20px; }
+  .file-preview-name { flex:1; font-size:13px; font-weight:700; color:#84F542; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .file-preview-size { font-size:10px; color:#475569; margin-top:2px; }
+  .file-remove { width:30px;height:30px; background:rgba(255,255,255,.06); border:none; border-radius:8px; cursor:pointer; color:#64748b; font-size:16px; display:flex;align-items:center;justify-content:center; }
+
+  /* ── Reset btn ── */
+  .reset-btn { text-align:center; padding: 12px; font-size:10px; font-weight:900; text-transform:uppercase; letter-spacing:.15em; color:#1e293b; background:none; border:none; cursor:pointer; width:100%; }
+  .reset-btn:hover { color: rgba(239,68,68,.4); }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- ═══════════ 1. SPLASH ═══════════ -->
+  <div class="screen active" id="splash">
+    <div class="splash-center">
+      <div class="splash-logo">⚡</div>
+      <p class="splash-welcome">Welcome</p>
+      <h1 class="splash-name">Gig<span>Bridge</span></h1>
+      <p class="splash-sub">Tap to begin</p>
+    </div>
+    <button class="green-btn" onclick="show('auth-choice')">
+      Get Started &nbsp;→
+    </button>
+  </div>
+
+  <!-- ═══════════ 2. AUTH CHOICE ═══════════ -->
+  <div class="screen" id="auth-choice">
+    <div class="auth-top">
+      <button class="back-btn" onclick="show('splash')">←</button>
+    </div>
+    <div class="auth-center">
+      <div class="auth-title">
+        <h1>Welcome</h1>
+        <p>Tap to begin</p>
+      </div>
+      <div style="width:100%; display:flex; flex-direction:column; gap:14px;">
+        <button class="auth-btn auth-btn-signup" onclick="show('language')">
+          <div class="auth-btn-icon signup-icon-bg">👤</div>
+          <div class="auth-btn-text">
+            <div class="eyebrow">New here?</div>
+            <div class="name">Sign Up</div>
+          </div>
+        </button>
+        <button class="auth-btn auth-btn-login" onclick="show('login-phone')">
+          <div class="auth-btn-icon login-icon-bg" style="color:#5BB8F5;">→</div>
+          <div class="auth-btn-text">
+            <div class="eyebrow">Already have an account?</div>
+            <div class="name">Log In</div>
+          </div>
+        </button>
+      </div>
+    </div>
+    <div class="auth-footer">By continuing you agree to our Terms &amp; Privacy Policy</div>
+  </div>
+
+  <!-- ═══════════ 3. LANGUAGE ═══════════ -->
+  <div class="screen" id="language">
+    <header class="page-header">
+      <button class="back-btn" onclick="show('auth-choice')">←</button>
+      <div>
+        <div class="title">🌐 Choose your language</div>
+        <div class="sub">You can change this later in settings</div>
+      </div>
+    </header>
+    <div class="lang-list" id="lang-list">
+      <!-- rendered by JS -->
+    </div>
+    <div class="footer-bar">
+      <button class="green-btn" onclick="show('phone')">Continue</button>
+    </div>
+  </div>
+
+  <!-- ═══════════ 4. PHONE (signup) ═══════════ -->
+  <div class="screen" id="phone">
+    <header class="page-header">
+      <button class="back-btn" onclick="show('language')">←</button>
+      <div>
+        <div class="title">📱 Verify your mobile</div>
+        <div class="sub">We'll send a 4-digit OTP</div>
+      </div>
+    </header>
+    <div class="phone-card">
+      <label class="field-label">Mobile Number</label>
+      <div class="phone-row">
+        <div class="phone-prefix"><span class="ph-icon">📞</span> +91</div>
+        <input type="tel" id="phone-input" maxlength="10" inputmode="numeric" placeholder="98765 43210" oninput="this.value=this.value.replace(/\D/g,''); checkPhone()" />
+      </div>
+      <button class="green-btn" id="send-otp-btn" disabled onclick="show('otp')">Send OTP</button>
+      <p class="secure-note"><span class="g">✔</span> Secure · OTP demo: 1234</p>
+    </div>
+    <div style="flex:1"></div>
+  </div>
+
+  <!-- ═══════════ 5. OTP (signup) ═══════════ -->
+  <div class="screen" id="otp">
+    <header class="page-header">
+      <button class="back-btn" onclick="show('phone')">←</button>
+      <div>
+        <div class="title">Enter OTP</div>
+        <div class="sub">4-digit code sent to your number</div>
+      </div>
+    </header>
+    <div class="otp-body">
+      <p class="otp-hint" id="otp-hint-signup">OTP sent to +91 ··· · Demo: 1234</p>
+      <div class="otp-row" id="otp-boxes-signup">
+        <input class="otp-box" maxlength="1" inputmode="numeric" oninput="otpMove(this,0,'signup')" />
+        <input class="otp-box" maxlength="1" inputmode="numeric" oninput="otpMove(this,1,'signup')" />
+        <input class="otp-box" maxlength="1" inputmode="numeric" oninput="otpMove(this,2,'signup')" />
+        <input class="otp-box" maxlength="1" inputmode="numeric" oninput="otpMove(this,3,'signup')" />
+      </div>
+      <p class="resend">Didn't receive? <button onclick="clearOtp('signup')">Resend OTP</button></p>
+    </div>
+    <div class="footer-bar">
+      <button class="green-btn" id="verify-otp-signup" disabled onclick="show('region')">Verify &amp; Continue →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════ 6. REGION / CITY ═══════════ -->
+  <div class="screen" id="region">
+    <header class="page-header">
+      <button class="back-btn" onclick="show('otp')">←</button>
+      <div>
+        <div class="title">📍 Select your city</div>
+        <div class="sub">We'll show gigs near you</div>
+      </div>
+    </header>
+    <div class="search-wrap">
+      <div class="search-box">
+        <span>🔍</span>
+        <input type="text" id="city-search" placeholder="Search city or area" oninput="filterCities()" />
+      </div>
+    </div>
+    <div class="city-grid" id="city-grid">
+      <!-- rendered by JS -->
+    </div>
+    <div class="footer-bar">
+      <button class="green-btn" id="city-continue-btn" disabled onclick="show('profile')">Continue</button>
+    </div>
+  </div>
+
+  <!-- ═══════════ 7. PROFILE ═══════════ -->
+  <div class="screen" id="profile">
+    <header class="page-header">
+      <button class="back-btn" onclick="show('region')">←</button>
+      <div>
+        <div class="title">Your basic info</div>
+        <div class="sub">Just a few details to get started</div>
+      </div>
+    </header>
+    <div class="profile-body">
+      <!-- Avatar -->
+      <div class="avatar-wrap">
+        <div class="avatar-circle" onclick="document.getElementById('pic-upload').click()">
+          <img id="avatar-img" src="" alt="" style="display:none; width:100%;height:100%;object-fit:cover;" />
+          <div class="avatar-cam" id="avatar-placeholder">📷</div>
+          <div class="avatar-cam-badge">📷</div>
+        </div>
+        <input type="file" id="pic-upload" accept="image/*" style="display:none" onchange="handlePic(event)" />
+        <p class="avatar-hint">Tap to upload profile photo</p>
+      </div>
+
+      <!-- Name row -->
+      <div class="name-row">
+        <div>
+          <label class="field-label">First Name</label>
+          <input type="text" id="first-name" placeholder="First" oninput="checkProfile()" />
+        </div>
+        <div>
+          <label class="field-label">Last Name</label>
+          <input type="text" id="last-name" placeholder="Last" oninput="checkProfile()" />
+        </div>
+      </div>
+
+      <!-- Address -->
+      <label class="field-label">Address</label>
+      <textarea id="address" placeholder="House no, Street, City, Pincode" oninput="checkProfile()"></textarea>
+    </div>
+    <div class="footer-bar">
+      <button class="green-btn" id="create-account-btn" disabled onclick="show('dashboard'); buildDashboard()">
+        Create Account 👤
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══════════ 8. DASHBOARD ═══════════ -->
+  <div class="screen" id="dashboard">
+    <!-- KYC overlay (absolute inside shell) -->
+    <div class="kyc-overlay" id="kyc-overlay">
+      <header class="page-header">
+        <button class="back-btn" onclick="closeKycOverlay()">←</button>
+        <div class="title" id="kyc-overlay-title">Enter Details</div>
+      </header>
+      <div class="kyc-scroll" id="kyc-overlay-body">
+        <!-- filled by JS -->
+      </div>
+      <div class="footer-bar">
+        <button class="green-btn" id="kyc-save-btn" onclick="saveKyc()">✔ Verify &amp; Save</button>
+      </div>
+    </div>
+
+    <div class="dash-header">
+      <div class="dash-inner">
+        <div class="dash-avatar" id="dash-avatar">👤</div>
+        <div class="dash-info">
+          <div class="dash-hi" id="dash-hi">Hi, there 👋</div>
+          <div class="dash-name">Please complete all these details</div>
+          <div class="dash-sub">Required to start accepting gigs</div>
+          <div class="progress-row">
+            <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:14%"></div></div>
+            <div class="progress-pct" id="progress-pct">14%</div>
+          </div>
+          <div class="progress-label">Profile complete</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dash-body" id="dash-body">
+      <!-- filled by buildDashboard() -->
+    </div>
+  </div>
+
+  <!-- ═══════════ LOGIN PHONE ═══════════ -->
+  <div class="screen" id="login-phone">
+    <header class="page-header">
+      <button class="back-btn" onclick="show('auth-choice')">←</button>
+      <div>
+        <div class="title">📱 Verify your mobile</div>
+        <div class="sub">We'll send a 4-digit OTP</div>
+      </div>
+    </header>
+    <div class="phone-card">
+      <label class="field-label">Mobile Number</label>
+      <div class="phone-row">
+        <div class="phone-prefix"><span class="ph-icon">📞</span> +91</div>
+        <input type="tel" id="login-phone-input" maxlength="10" inputmode="numeric" placeholder="98765 43210" oninput="this.value=this.value.replace(/\D/g,''); checkLoginPhone()" />
+      </div>
+      <button class="green-btn" id="login-otp-btn" disabled onclick="show('login-otp')">Send OTP</button>
+      <p class="secure-note"><span class="g">✔</span> Secure · OTP demo: 1234</p>
+    </div>
+    <div style="flex:1"></div>
+  </div>
+
+  <!-- ═══════════ LOGIN OTP ═══════════ -->
+  <div class="screen" id="login-otp">
+    <header class="page-header">
+      <button class="back-btn" onclick="show('login-phone')">←</button>
+      <div>
+        <div class="title">Enter OTP</div>
+        <div class="sub">4-digit code sent to your number</div>
+      </div>
+    </header>
+    <div class="otp-body">
+      <p class="otp-hint">OTP sent to your number · Demo: 1234</p>
+      <div class="otp-row" id="otp-boxes-login">
+        <input class="otp-box" maxlength="1" inputmode="numeric" oninput="otpMove(this,0,'login')" />
+        <input class="otp-box" maxlength="1" inputmode="numeric" oninput="otpMove(this,1,'login')" />
+        <input class="otp-box" maxlength="1" inputmode="numeric" oninput="otpMove(this,2,'login')" />
+        <input class="otp-box" maxlength="1" inputmode="numeric" oninput="otpMove(this,3,'login')" />
+      </div>
+      <p class="resend">Didn't receive? <button onclick="clearOtp('login')">Resend OTP</button></p>
+    </div>
+    <div class="footer-bar">
+      <button class="green-btn" id="verify-otp-login" disabled onclick="show('dashboard'); buildDashboard()">
+        Verify &amp; Continue →
+      </button>
+    </div>
+  </div>
+
+</div><!-- /shell -->
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+const state = {
+  language: 'en',
+  phone: '',
+  region: '',
+  firstName: '', lastName: '', address: '',
+  profilePic: null,
+  kyc: { aadhar: false, pan: false, drivingLicense: false },
+  payment: { bankAccount: false, upiId: false },
+  activeKyc: null,
+  aadharFile: null,
+};
+
+// ── Languages ──────────────────────────────────────────────────────────────
+const LANGS = [
+  { code:'en', native:'English', label:'English' },
+  { code:'hi', native:'हिन्दी', label:'Hindi' },
+  { code:'te', native:'తెలుగు', label:'Telugu' },
+  { code:'ta', native:'தமிழ்', label:'Tamil' },
+  { code:'kn', native:'ಕನ್ನಡ', label:'Kannada' },
+  { code:'ml', native:'മലയാളം', label:'Malayalam' },
+];
+
+// ── Cities ─────────────────────────────────────────────────────────────────
+const CITIES = [
+  { name:'Hyderabad',  state:'Telangana',       monument:'🕌', landmark:'Charminar' },
+  { name:'Bengaluru',  state:'Karnataka',       monument:'🏛️', landmark:'Vidhana Soudha' },
+  { name:'Mumbai',     state:'Maharashtra',     monument:'🌉', landmark:'Gateway of India' },
+  { name:'Delhi NCR',  state:'Delhi',           monument:'🕍', landmark:'Qutub Minar' },
+  { name:'Chennai',    state:'Tamil Nadu',      monument:'🏖️', landmark:'Marina Beach' },
+  { name:'Kolkata',    state:'West Bengal',     monument:'🏰', landmark:'Victoria Memorial' },
+  { name:'Pune',       state:'Maharashtra',     monument:'⚔️', landmark:'Shaniwar Wada' },
+  { name:'Ahmedabad',  state:'Gujarat',         monument:'🕌', landmark:'Sabarmati Ashram' },
+  { name:'Kochi',      state:'Kerala',          monument:'⛪', landmark:'Fort Kochi' },
+  { name:'Coimbatore', state:'Tamil Nadu',      monument:'🏔️', landmark:'Vellingiri Hills' },
+  { name:'Jaipur',     state:'Rajasthan',       monument:'🏯', landmark:'Hawa Mahal' },
+  { name:'Lucknow',    state:'Uttar Pradesh',   monument:'🕌', landmark:'Bara Imambara' },
+  { name:'Indore',     state:'Madhya Pradesh',  monument:'🏛️', landmark:'Rajwada Palace' },
+  { name:'Nagpur',     state:'Maharashtra',     monument:'🦁', landmark:'Deekshabhoomi' },
+  { name:'Surat',      state:'Gujarat',         monument:'💎', landmark:'Surat Castle' },
+  { name:'Vizag',      state:'Andhra Pradesh',  monument:'⛰️', landmark:'Kailasagiri' },
+];
+
+// ── Screen switch ──────────────────────────────────────────────────────────
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  // Scroll shell to top
+  document.querySelector('.shell').scrollTop = 0;
+
+  if (id === 'language') renderLangs();
+  if (id === 'region')   renderCities(CITIES);
+  if (id === 'otp') {
+    const ph = document.getElementById('phone-input').value;
+    document.getElementById('otp-hint-signup').textContent = `OTP sent to +91 ${ph} · Demo: 1234`;
+  }
+}
+
+// ── Language list ──────────────────────────────────────────────────────────
+function renderLangs() {
+  const el = document.getElementById('lang-list');
+  el.innerHTML = LANGS.map(l => `
+    <button class="lang-item ${state.language===l.code?'selected':''}"
+      onclick="selectLang('${l.code}')">
+      <div>
+        <div class="lang-native">${l.native}</div>
+        <div class="lang-en">${l.label}</div>
+      </div>
+      ${state.language===l.code ? '<div class="lang-check">✓</div>' : ''}
+    </button>`).join('');
+}
+function selectLang(code) { state.language = code; renderLangs(); }
+
+// ── City grid ──────────────────────────────────────────────────────────────
+function renderCities(list) {
+  const grid = document.getElementById('city-grid');
+  grid.innerHTML = list.map(c => `
+    <button class="city-card ${state.region===c.name?'selected':''}"
+      onclick="selectCity('${c.name}')">
+      <div class="city-monument">${c.monument}</div>
+      <div class="city-name">${c.name}</div>
+      <div class="city-state">${c.state}</div>
+      <div class="city-landmark">${c.landmark}</div>
+    </button>`).join('');
+}
+function selectCity(name) {
+  state.region = name;
+  renderCities(
+    document.getElementById('city-search').value.trim()
+      ? CITIES.filter(c => c.name.toLowerCase().includes(document.getElementById('city-search').value.toLowerCase()) || c.state.toLowerCase().includes(document.getElementById('city-search').value.toLowerCase()))
+      : CITIES
+  );
+  document.getElementById('city-continue-btn').disabled = false;
+}
+function filterCities() {
+  const q = document.getElementById('city-search').value.toLowerCase();
+  renderCities(q ? CITIES.filter(c => c.name.toLowerCase().includes(q) || c.state.toLowerCase().includes(q)) : CITIES);
+}
+
+// ── Phone check ────────────────────────────────────────────────────────────
+function checkPhone() {
+  const v = document.getElementById('phone-input').value;
+  document.getElementById('send-otp-btn').disabled = v.length < 10;
+}
+function checkLoginPhone() {
+  const v = document.getElementById('login-phone-input').value;
+  document.getElementById('login-otp-btn').disabled = v.length < 10;
+}
+
+// ── OTP ────────────────────────────────────────────────────────────────────
+function otpMove(inp, idx, kind) {
+  inp.value = inp.value.replace(/\D/g,'');
+  const id = kind==='signup' ? 'otp-boxes-signup' : 'otp-boxes-login';
+  const verifyId = kind==='signup' ? 'verify-otp-signup' : 'verify-otp-login';
+  const boxes = document.getElementById(id).querySelectorAll('.otp-box');
+  if (inp.value && idx < 3) boxes[idx+1].focus();
+  const allFilled = [...boxes].every(b => b.value.length === 1);
+  document.getElementById(verifyId).disabled = !allFilled;
+}
+function clearOtp(kind) {
+  const id = kind==='signup' ? 'otp-boxes-signup' : 'otp-boxes-login';
+  const verifyId = kind==='signup' ? 'verify-otp-signup' : 'verify-otp-login';
+  document.getElementById(id).querySelectorAll('.otp-box').forEach(b => b.value='');
+  document.getElementById(verifyId).disabled = true;
+}
+
+// ── Profile pic ────────────────────────────────────────────────────────────
+function handlePic(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    state.profilePic = ev.target.result;
+    const img = document.getElementById('avatar-img');
+    img.src = state.profilePic; img.style.display = 'block';
+    document.getElementById('avatar-placeholder').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── Profile form ───────────────────────────────────────────────────────────
+function checkProfile() {
+  const fn = document.getElementById('first-name').value.trim();
+  const ln = document.getElementById('last-name').value.trim();
+  const ad = document.getElementById('address').value.trim();
+  document.getElementById('create-account-btn').disabled = !(fn && ln && ad);
+}
+
+// ── Progress ───────────────────────────────────────────────────────────────
+function calcProgress() {
+  let done = 1; // phone verified
+  const fn = document.getElementById('first-name')?.value.trim();
+  const ln = document.getElementById('last-name')?.value.trim();
+  const ad = document.getElementById('address')?.value.trim();
+  if (fn && ln && ad) done++;
+  if (state.kyc.aadhar) done++;
+  if (state.kyc.pan) done++;
+  if (state.kyc.drivingLicense) done++;
+  if (state.payment.bankAccount) done++;
+  if (state.payment.upiId) done++;
+  return Math.round((done/7)*100);
+}
+
+// ── Build dashboard ────────────────────────────────────────────────────────
+function buildDashboard() {
+  // Update header
+  state.firstName = document.getElementById('first-name')?.value.trim() || '';
+  state.lastName  = document.getElementById('last-name')?.value.trim()  || '';
+  state.address   = document.getElementById('address')?.value.trim()    || '';
+
+  const isPersonal = state.firstName && state.lastName && state.address;
+  const pct = calcProgress();
+
+  document.getElementById('dash-hi').textContent = `Hi, ${state.firstName || 'there'} 👋`;
+  document.getElementById('progress-fill').style.width = pct+'%';
+  document.getElementById('progress-pct').textContent = pct+'%';
+
+  // Avatar
+  const av = document.getElementById('dash-avatar');
+  if (state.profilePic) {
+    av.innerHTML = `<img src="${state.profilePic}" alt="profile" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+  } else {
+    av.textContent = '👤';
+  }
+
+  // Phone number
+  const ph = document.getElementById('phone-input')?.value || document.getElementById('login-phone-input')?.value || '';
+
+  // KYC items
+  const kycItems = [
+    { key:'aadhar',        label:'Aadhar Card',      sub:'Government Identity', icon:'🛡️' },
+    { key:'pan',           label:'PAN Card',         sub:'Tax Identity',        icon:'📄' },
+    { key:'drivingLicense',label:'Driving License',  sub:'Optional Identity',   icon:'🪪' },
+  ];
+  const paymentItems = [
+    { key:'bankAccount',   label:'Bank Account',     sub:'Account & IFSC details', icon:'🏦' },
+    { key:'upiId',         label:'UPI ID',           sub:'Linked payment handle',  icon:'📲' },
+  ];
+
+  const renderItem = (item, isDone, isLocked, section) => {
+    const extraClass = isLocked ? 'locked' : '';
+    const right = isDone
+      ? `<div style="display:flex;align-items:center;gap:8px;">
+           <div class="done-circle">✓</div>
+           <button class="edit-circle" onclick="openKyc('${item.key}','${item.label}','${section}');event.stopPropagation()">✏️</button>
+         </div>`
+      : isLocked
+        ? `<div class="pill-locked">🔒 Locked</div>`
+        : `<span class="pill-fill">Please Fill</span>`;
+
+    return `
+      <button class="item-card ${extraClass}"
+        onclick="${isLocked?'':(`openKyc('${item.key}','${item.label}','${section}')`)}">
+        <div class="item-icon">${item.icon}</div>
+        <div class="item-body">
+          <div class="item-title">${item.label}</div>
+          <div class="item-sub">${item.sub}</div>
+        </div>
+        ${right}
+      </button>`;
+  };
+
+  const kycLock = !isPersonal;
+  const payLock = !isPersonal; // payment also locked until personal done
+
+  let html = `
+    <!-- Personal -->
+    <div class="dash-section">
+      <div class="section-label">Personal Details</div>
+
+      <!-- Phone verified -->
+      <div class="phone-verified-card">
+        <div class="ph-card-icon">📞</div>
+        <div class="item-body">
+          <div class="item-title">Phone Number</div>
+          <div class="item-sub">+91 ${ph || '—'}</div>
+        </div>
+        <div class="pill-verified">✓ Verified</div>
+      </div>
+
+      <!-- Personal Info row -->
+      <div class="item-card" onclick="show('profile')">
+        <div class="item-icon">${state.profilePic ? `<img src="${state.profilePic}" style="width:100%;height:100%;object-fit:cover;border-radius:10px;">` : '👤'}</div>
+        <div class="item-body">
+          <div class="item-title">Personal Info</div>
+          <div class="item-sub">${isPersonal ? state.firstName+' '+state.lastName : 'Add your details'}</div>
+        </div>
+        ${isPersonal
+          ? `<div style="display:flex;align-items:center;gap:8px;"><div class="done-circle">✓</div><div class="edit-circle">✏️</div></div>`
+          : `<span class="pill-fill">Please Fill</span>`
+        }
+      </div>
+    </div>
+
+    <!-- KYC -->
+    <div class="dash-section">
+      <div class="section-label">KYC Documents</div>
+      ${kycLock ? `<div class="lock-banner"><span>🔒</span> Complete your basic information above to unlock KYC document verification.</div>` : ''}
+      ${kycItems.map(i => renderItem(i, state.kyc[i.key], kycLock, 'kyc')).join('')}
+    </div>
+
+    <!-- Payment -->
+    <div class="dash-section">
+      <div class="section-label">Payment Details</div>
+      ${payLock ? `<div class="lock-banner"><span>🔒</span> Complete KYC documents above to unlock payment details.</div>` : ''}
+      ${paymentItems.map(i => renderItem(i, state.payment[i.key], payLock, 'payment')).join('')}
+    </div>
+
+    <button class="reset-btn" onclick="resetAll()">Reset Progress</button>
+  `;
+
+  document.getElementById('dash-body').innerHTML = html;
+}
+
+// ── KYC Overlay ────────────────────────────────────────────────────────────
+function openKyc(key, label, section) {
+  state.activeKyc = { key, label, section };
+  state.aadharFile = null;
+  document.getElementById('kyc-overlay-title').textContent = 'Enter '+label;
+  document.getElementById('kyc-save-btn').disabled = false;
+
+  let body = '';
+  if (key === 'aadhar') {
+    body = `
+      <div style="margin-bottom:24px;">
+        <label class="field-label">Aadhaar Number</label>
+        <input type="tel" id="kyc-val" inputmode="numeric" maxlength="14"
+          placeholder="1234 5678 9012"
+          oninput="this.value=this.value.replace(/[^\\d\\s]/g,''); checkKycBtn()"
+          style="font-size:18px;letter-spacing:.12em;" />
+      </div>
+      <div>
+        <label class="field-label">Upload Aadhaar Document</label>
+        <input type="file" id="aadhar-file-input" accept="image/jpeg,image/png,image/jpg,application/pdf"
+          style="display:none" onchange="handleAadharFile(event)" />
+        <div class="upload-zone" id="upload-zone" onclick="document.getElementById('aadhar-file-input').click()">
+          <span class="icon">☁️</span>
+          <p>Upload Photo or PDF</p>
+          <small>JPG, PNG or PDF · Max 5MB</small>
+        </div>
+        <div class="file-preview" id="file-preview" style="display:none;margin-top:10px;"></div>
+      </div>`;
+  } else if (key === 'bankAccount') {
+    body = `
+      <div style="margin-bottom:20px;">
+        <label class="field-label">Account Number</label>
+        <input type="tel" id="kyc-val" inputmode="numeric" placeholder="123456789012"
+          oninput="checkKycBtn()" />
+      </div>
+      <div>
+        <label class="field-label">IFSC Code</label>
+        <input type="text" id="kyc-val2" placeholder="HDFC0001234"
+          oninput="this.value=this.value.toUpperCase(); checkKycBtn()" />
+      </div>`;
+  } else {
+    const placeholders = { pan:'ABCDE1234F', drivingLicense:'KA01 20230012345', upiId:'ramesh@oksbi' };
+    body = `
+      <label class="field-label">${label} Number / ID</label>
+      <input type="text" id="kyc-val" placeholder="${placeholders[key]||''}"
+        oninput="checkKycBtn()" />`;
+  }
+
+  document.getElementById('kyc-overlay-body').innerHTML = body;
+  document.getElementById('kyc-overlay').classList.add('open');
+}
+
+function handleAadharFile(e) {
+  const file = e.target.files[0]; if (!file) return;
+  state.aadharFile = file;
+  document.getElementById('upload-zone').style.display = 'none';
+  document.getElementById('file-preview').style.display = 'flex';
+  document.getElementById('file-preview').innerHTML = `
+    <div class="file-preview-icon">📄</div>
+    <div style="flex:1;min-width:0;">
+      <div class="file-preview-name">${file.name}</div>
+      <div class="file-preview-size">${(file.size/1024).toFixed(0)} KB · ${file.type.includes('pdf')?'PDF':'Image'}</div>
+    </div>
+    <button class="file-remove" onclick="removeAadharFile()">✕</button>`;
+}
+function removeAadharFile() {
+  state.aadharFile = null;
+  document.getElementById('file-preview').style.display = 'none';
+  document.getElementById('upload-zone').style.display = 'flex';
+  document.getElementById('aadhar-file-input').value = '';
+}
+
+function checkKycBtn() {
+  const v = document.getElementById('kyc-val')?.value?.trim();
+  document.getElementById('kyc-save-btn').disabled = !v;
+}
+
+function closeKycOverlay() {
+  document.getElementById('kyc-overlay').classList.remove('open');
+  state.activeKyc = null;
+}
+
+function saveKyc() {
+  if (!state.activeKyc) return;
+  const { key, section } = state.activeKyc;
+  if (section === 'kyc') state.kyc[key] = true;
+  else state.payment[key] = true;
+  closeKycOverlay();
+  buildDashboard();
+}
+
+// ── Reset ──────────────────────────────────────────────────────────────────
+function resetAll() {
+  state.kyc = { aadhar:false, pan:false, drivingLicense:false };
+  state.payment = { bankAccount:false, upiId:false };
+  state.profilePic = null;
+  state.firstName = ''; state.lastName = ''; state.address = '';
+  buildDashboard();
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+renderLangs();
+renderCities(CITIES);
+</script>
+</body>
+</html>
